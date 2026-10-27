@@ -172,10 +172,10 @@ exit code 1</pre><button>Copy</button></div>
 Any phone over adb. Reads the screen tree, no app changes.</pre><button>Copy</button></div>
     <div class="code card" data-p="agent" hidden><pre>mkdir -p ~/.claude/skills/layout-balance &amp;&amp; curl -fsSL https://raw.githubusercontent.com/IFAKA/layout-balance/master/skills/layout-balance/SKILL.md -o ~/.claude/skills/layout-balance/SKILL.md
 
-npx github:IFAKA/layout-balance URL --plan
-1. [dominance] img.hero: at most 307px tall
-   css: max-height: 42.6svh; object-fit: contain
-<u>plan check: pass</u></pre><button>Copy</button></div>
+npx github:IFAKA/layout-balance URL --fix
+<u>TESTED FIX: passes on all 8 screens.</u>
+#hero{display:flex!important; ...}
+img.hero{max-height:42.7svh!important}</pre><button>Copy</button></div>
   </div>
 </section>
 
@@ -183,7 +183,7 @@ npx github:IFAKA/layout-balance URL --plan
   <h2>Same page, same result.</h2>
   <div class="facts">
     <div class="card"><h3>No AI</h3><p>Arithmetic on box positions and one screenshot. Same page, same numbers.</p></div>
-    <div class="card"><h3>Measures only</h3><p>It never edits your page. It reads, prints, and exits.</p></div>
+    <div class="card"><h3>Tested fix</h3><p>It never edits your page. It tries CSS on the real page, then prints a block that already passes.</p></div>
     <div class="card"><h3>CI ready</h3><p>Exit code 1 fails the build. Playwright for web, adb for Android.</p></div>
   </div>
   <div class="cta"><a class="btn" href="https://github.com/IFAKA/layout-balance">Get it on GitHub</a></div>
