@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>layout-balance: measure the visual balance of any page</title>
@@ -123,6 +124,16 @@ footer{color:var(--mute);font-size:13px;padding:40px 20px;text-align:center;bord
 .mrow{display:grid;grid-template-columns:5.8em 1fr 8.8em;gap:8px;align-items:center;font:600 11.5px/1 ui-monospace,Menlo,monospace;margin-top:6px}.mrow>span:last-child{text-align:right;white-space:nowrap}.mrow>span:first-child{color:#d0d0d5;text-align:left}
 .mrow .ok{color:#30d158}.mrow .no{color:#ff453a}
 @media(max-width:760px){.rules li{grid-template-columns:5.6em 1fr 8.4em;gap:6px;font-size:11px}.ovcap{min-width:0;width:92%}.ovcap .mrow{display:none}.rules li{font-size:10px;grid-template-columns:6.3em 1fr 8.9em;gap:6px}}
+.pl{display:block!important;opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}.pl.on{opacity:1;visibility:visible}
+.ovcap{display:block!important;opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}.ovcap.on{opacity:1;visibility:visible}
+.nt .ov g,.nt .pl,.nt .ovcap{transition:none!important}
+.bar i{transition:width .3s cubic-bezier(.2,.8,.2,1),left .3s cubic-bezier(.2,.8,.2,1)}
+.cross{transition:opacity .3s,left .6s cubic-bezier(.2,.8,.2,1),top .6s cubic-bezier(.2,.8,.2,1)}
+#pgs .cross,#pgs .ov g{transition:opacity .25s}
+#pgs .cross{opacity:1}
+.rules li{transition:opacity .4s,transform .4s,background .2s}
+@media(max-width:760px) and (max-height:760px){.stage{width:72%;margin:0 auto}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
 </style>
 </head>
 <body>
@@ -246,6 +257,8 @@ function rulesOf(m){const dx=m.cx-50,dy=m.cy-50,f=v=>Math.abs(v).toFixed(0)+"%";
 function bar(r){const val=r[3],lim=r[4],full=lim>0?lim*2:20,v=Math.min(val,full),aw=lim/full*100,uw=Math.min(v,lim)/full*100,ew=v>lim?(v-lim)/full*100:0;return`<span class="bar"><i class="al" style="width:${aw}%"></i><i class="us" style="width:${uw}%"></i><i class="ex" style="left:${aw}%;width:${ew}%"></i><i class="tk" style="left:${aw}%"></i></span>`}
 function meter(r){return`<span>${r[0]}</span>${bar(r)}<span class="${r[2]?"ok":"no"}">${r[2]?"✓":r[5]} ${r[3].toFixed(0)}% · max ${r[4]}%</span>`}
 const GRP={"centre-x":"weight","centre-y":"weight",whitespace:"space",dominance:"fit","fold-cut":"fit"};
+function patchRows(el,R){const t=document.createElement("ul");t.innerHTML=rows(R);if(el.children.length!==R.length){el.innerHTML=t.innerHTML;return}
+[...el.children].forEach((li,i)=>{const n=t.children[i];li.querySelectorAll(".bar i").forEach((b,j)=>b.style.cssText=n.querySelectorAll(".bar i")[j].style.cssText);const a=li.lastElementChild,c=n.lastElementChild;a.textContent=c.textContent;a.className=c.className})}
 function rows(R){return R.map(r=>`<li>${meter(r)}</li>`).join("")}
 function chips(R){const ok=g=>R.filter(r=>GRP[r[0]]===g).every(r=>r[2]);return["weight","space","fit"].map(g=>`<b class="chip ${ok(g)?"p":"f"}">${g} ${ok(g)?"✓":"✗"}</b>`).join("")+"<div>"+(R.every(r=>r[2])?"PASS · exit code 0":"FAIL · exit code 1")+"</div>"}
 let OVN=0;
@@ -267,7 +280,7 @@ dom:dOk?"✓ Picture is under the limit":"Picture is "+p0.h.toFixed(0)+"% tall. 
 fold:fOk?"✓ Nothing is cut at the bottom":"↑ "+m.cut.toFixed(0)+"% is cut off the bottom. Move up or shrink."};
 const OK={centre:cOk,tilt:wOk,dom:dOk,fold:fOk};
 scr._ov={A,OK,R,listId};
-document.querySelectorAll("#"+listId+" li").forEach((li,i)=>{const k=MAP[R[i][0]];li.onclick=()=>{scr.dataset.sel=k;showOv(scr)};li.onmouseenter=()=>showOv(scr,k);li.onmouseleave=()=>showOv(scr)});showOv(scr)}
+document.querySelectorAll("#"+listId+" li").forEach((li,i)=>{const k=MAP[R[i][0]];li.onclick=()=>{scr.dataset.sel=k;showOv(scr)};});scr.classList.add('nt');showOv(scr);requestAnimationFrame(()=>requestAnimationFrame(()=>scr.classList.remove('nt')))}
 const MAP={"centre-x":"centre","centre-y":"centre",whitespace:"tilt",dominance:"dom","fold-cut":"fold"};
 function showOv(scr,force){const o=scr._ov;if(!o)return;const pg=scr.id==="pgs",st=pg?9:step;
 let k=force||"";if(!k&&st>=3)k=st===3?"centre":(scr.dataset.sel||Object.keys(o.OK).find(x=>!o.OK[x])||"centre");
@@ -280,7 +293,7 @@ d.style.cssText=`left:${e.x}%;top:${e.y}%;width:${e.w}%;height:${e.h}%;--b:${e.b
 d.dataset.label=e.n+" "+Math.round(e.w*12.8)+"×"+Math.round(e.h*7.2);screen.prepend(d)});
 const m=measure(els),dx=m.cx-50,dy=m.cy-50;
 window.R=rulesOf(m);window.M=m;
-$("rules").innerHTML=rows(R);
+if($("rules").children.length===R.length)patchRows($("rules"),R);else $("rules").innerHTML=rows(R);
 drawOv(screen,m,R,"rules");document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.s===cur));apply()}
 function apply(){screen.className="screen s"+step+(SC[cur].some(e=>e.y+e.h>100)?" cutscene":"");
 $("num").textContent="Step "+(step+1)+" of 5";$("rt").textContent=STEPS[step][0];$("rc").textContent=STEPS[step][1];
@@ -310,7 +323,7 @@ sc.querySelectorAll(".el").forEach(n=>n.remove());
 els.forEach(e=>{const d=document.createElement("div");d.className="el "+e.k;d.style.cssText=`left:${e.x}%;top:${e.y}%;width:${e.w}%;height:${e.h}%;--b:${e.b}`;sc.prepend(d)});
 const m=measure(els),R=rulesOf(m);
 g("pgr").className="cross r "+(R[0][2]&&R[1][2]?"pass":"fail");g("pgr").style.left=m.cx+"%";g("pgr").style.top=m.cy+"%";
-g("pgrules").innerHTML=rows(R).replace(/<li>/g,'<li class="on">');drawOv(sc,m,R,"pgrules",1);
+if(!g("pgrules").children.length){g("pgrules").innerHTML=rows(R).replace(/<li>/g,'<li class="on">')}else patchRows(g("pgrules"),R);drawOv(sc,m,R,"pgrules",1);
 g("pgv").className="verdict on "+(R.some(r=>!r[2])?"f":"p");g("pgv").innerHTML=chips(R);
 IDS.forEach((_,i)=>track(i,v))}
 IDS.forEach(i=>g(i).oninput=run);run()})();
