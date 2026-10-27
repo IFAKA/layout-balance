@@ -88,6 +88,9 @@ footer{color:var(--mute);font-size:13px;padding:40px 20px;text-align:center;bord
 .dots button{width:28px;height:4px;border:0;border-radius:3px;background:#3a3a3d;cursor:pointer;padding:0}
 .dots button.on{background:#f5f5f7}
 @media(max-width:760px){.demo{grid-template-columns:1fr;gap:12px}.read{min-height:0}.cap{min-height:0}.rules li{padding:5px 0}.stage{width:100%}.cap{font-size:14px}}
+.sl{display:block;font-size:13px;color:var(--mute);margin-bottom:12px}.sl input{display:block;width:100%;margin-top:6px;accent-color:#0071e3}
+#play .fold span{display:none}#play{padding-top:90px;padding-bottom:24px}#play .stage{width:min(100%,calc((100svh - 330px)*1.7778))}.sl{margin-bottom:8px}.sl input{margin-top:2px}
+@media(max-height:760px),(max-width:760px){#play .lead{display:none}#play .demo{margin-top:1svh!important}#play .rules li{padding:5px 0}}
 </style>
 </head>
 <body>
@@ -126,6 +129,35 @@ footer{color:var(--mute);font-size:13px;padding:40px 20px;text-align:center;bord
   <div class="dots" id="dots"></div>
 </div>
 </div>
+
+<section id="play">
+  <h2>Break it yourself.</h2>
+  <p class="lead">Drag the sliders. The numbers update live, with the same maths.</p>
+  <div class="demo" style="margin-top:3svh">
+    <div class="stagecol"><div class="stage"><div class="bar"><i></i><i></i><i></i><span>your page · 1280×720</span></div>
+      <div class="screen" id="pgs"><div class="cross w" style="left:50%;top:50%;opacity:1"></div><div class="cross r" id="pgr" style="opacity:1"></div><div class="fold" style="opacity:1"><span>bottom of the screen</span></div></div></div></div>
+    <div class="read">
+      <label class="sl">Heading size<input id="pgh" type="range" min="6" max="30" value="12"></label>
+      <label class="sl">Picture size<input id="pgz" type="range" min="15" max="80" value="40"></label>
+      <label class="sl">Picture position<input id="pgy" type="range" min="25" max="90" value="48"></label>
+      <ul class="rules" id="pgrules"></ul><div class="verdict on" id="pgv"></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Proof, not promises.</h2>
+  <div class="grid" style="margin-top:4svh">
+    <div class="card"><h3>4 of 28</h3><p>screens failed on my own landing page. The tool found them, I fixed them, all 28 pass.</p></div>
+    <div class="card"><h3>Same result</h3><p>No randomness, no AI. Same page and same window size give the same numbers, every run.</p></div>
+    <div class="card"><h3>Measures only</h3><p>It never edits your page. It reads, calculates, prints, and exits. Nothing runs in the background.</p></div>
+  </div>
+  <div class="grid" style="margin-top:14px">
+    <div class="card"><h3>Web</h3><p>Playwright and Chrome. Four window sizes by default.</p></div>
+    <div class="card"><h3>Android</h3><p>Any phone over <code>adb</code>. Reads the screen tree, no app changes.</p></div>
+    <div class="card"><h3>CI</h3><p>Exit code 1 fails the build. Reports save as images with the crosses.</p></div>
+  </div>
+</section>
 
 <section id="start">
   <h2>One command.</h2>
@@ -199,6 +231,18 @@ document.querySelectorAll("#dots button").forEach((b,i)=>b.onclick=()=>scrollTo(
 document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{cur=b.dataset.s;build()});
 function onScroll(){const r=how.getBoundingClientRect(),p=Math.min(.999,Math.max(0,-r.top/(r.height-innerHeight))),n=Math.floor(p*5);if(n!==step){step=n;apply()}}
 addEventListener("scroll",onScroll,{passive:true});build();onScroll();
+</script>
+<script>
+(function(){const sc=document.getElementById("pgs"),g=id=>document.getElementById(id);
+function run(){const H=+g("pgh").value,Z=+g("pgz").value,Y=+g("pgy").value;
+const els=[{k:"text",x:20,y:6,w:60,h:H,b:1},{k:"text",x:30,y:6+H+3,w:40,h:5,b:.6},{k:"media",x:50-Z*.4,y:Y,w:Z*.8,h:Z,b:.45}];
+sc.querySelectorAll(".el").forEach(n=>n.remove());
+els.forEach(e=>{const d=document.createElement("div");d.className="el "+e.k;d.style.cssText=`left:${e.x}%;top:${e.y}%;width:${e.w}%;height:${e.h}%;--b:${e.b}`;sc.prepend(d)});
+const m=measure(els),dx=m.cx-50,dy=m.cy-50,R=[["centre-x",Math.abs(dx).toFixed(0)+"% off",Math.abs(dx)<=10],["centre-y",Math.abs(dy).toFixed(0)+"% "+(dy<0?"too high":"too low"),Math.abs(dy)<=20],["whitespace",m.tilt.toFixed(0)+"% uneven",m.tilt<=12],["dominance","picture "+m.dom.toFixed(0)+"%",m.dom<=45],["fold-cut",m.cut.toFixed(0)+"% cut",m.cut===0]];
+g("pgr").style.left=m.cx+"%";g("pgr").style.top=m.cy+"%";
+g("pgrules").innerHTML=R.map(r=>`<li class="on"><span>${r[0]}</span><span class="${r[2]?"ok":"no"}">${r[2]?"✓":"✗"} ${r[1]}</span></li>`).join("");
+const f=R.some(r=>!r[2]);g("pgv").className="verdict on "+(f?"f":"p");g("pgv").textContent=f?"FAIL · exit code 1":"PASS · exit code 0"}
+["pgh","pgz","pgy"].forEach(i=>g(i).oninput=run);run()})();
 </script>
 </body>
 </html>
