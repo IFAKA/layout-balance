@@ -114,6 +114,8 @@ npx github:IFAKA/layout-balance android screens.json --out report
 
 It reads the screen tree with `uiautomator dump` and the picture with `screencap`, then runs the same rules. The status bar and navigation bar are the "top bar" and are skipped. Pixel limits (`minGap`, `minEdge`) are in dp and scaled to the phone. Use `--serial ID` when several devices are connected. Each screen needs a `start` command (or leave it out to check the screen that is open now).
 
+React Native apps on Android work too: the tool reads the native screen, so a RN `Text` counts as text and a RN `Image` counts as a picture. Tested with a React Native release build on a real phone. iOS is not supported.
+
 ## Use it as a library
 
 ```js
