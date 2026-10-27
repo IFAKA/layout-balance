@@ -118,6 +118,14 @@ const failing = results.filter((r) => r.findings.length);
 
 Add one line to your `AGENTS.md` or `CLAUDE.md`: *after any page change, run `npx github:IFAKA/layout-balance <url>` and fix every failure before saying done.* The messages are plain sentences with numbers, so an agent can act on them without looking at the page.
 
+### As a Claude Code skill
+
+```sh
+mkdir -p ~/.claude/skills/layout-balance && curl -fsSL https://raw.githubusercontent.com/IFAKA/layout-balance/master/skills/layout-balance/SKILL.md -o ~/.claude/skills/layout-balance/SKILL.md
+```
+
+The agent then measures after every UI change, fixes each failure from the numbers, and measures again until the exit code is 0.
+
 ## Why it exists
 
 Visual balance is studied (weight maps, moment equilibrium, symmetry scores), and layout checkers exist for overflow and overlap. No tool combined both as a simple gate you can drop into any project. See [research notes](docs/RESEARCH.md).
