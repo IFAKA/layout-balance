@@ -21,12 +21,21 @@ export function collect() {
     for (let p = el.parentElement; p; p = p.parentElement) if (parseFloat(getComputedStyle(p).opacity) < 0.05) return false;
     return true;
   };
+  const path = (el) => {
+    const parts = [];
+    for (let e = el, n = 0; e && e !== document.body && n < 2; e = e.parentElement, n++) {
+      if (e.id) { parts.unshift("#" + e.id); break; }
+      const cls = [...e.classList].slice(0, 2).map((c) => "." + CSS.escape(c)).join("");
+      parts.unshift(e.tagName.toLowerCase() + cls);
+    }
+    return parts.join(" > ").slice(0, 80);
+  };
   const leaves = [];
   const push = (kind, r, el) => {
     if (r.width < 2 || r.height < 2 || r.bottom <= 0 || r.top >= H || r.right <= 0 || r.left >= W) return;
     const vis = (Math.min(r.right, W) - Math.max(r.left, 0)) * (Math.min(r.bottom, H) - Math.max(r.top, 0));
     if (kind !== "text" && vis < r.width * r.height * 0.25) return; // mostly off screen: it belongs to the next screen
-    leaves.push({ kind, x: r.left, y: r.top, w: r.width, h: r.height, fixed: inFixed(el), tag: el.tagName.toLowerCase() });
+    leaves.push({ sel: path(el), kind, x: r.left, y: r.top, w: r.width, h: r.height, fixed: inFixed(el), tag: el.tagName.toLowerCase() });
   };
   for (const el of all) {
     if (["SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE"].includes(el.tagName) || !visible(el)) continue;

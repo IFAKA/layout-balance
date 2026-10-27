@@ -5,8 +5,9 @@ import { chromium } from "playwright";
 import { collect } from "./collect.js";
 import { evaluate } from "./rules.js";
 import { weightCentre, drawReport } from "./weight.js";
+import { plan } from "./plan.js";
 
-export { evaluate, weightCentre, drawReport };
+export { evaluate, weightCentre, drawReport, plan };
 const here = dirname(fileURLToPath(import.meta.url));
 
 export function loadConfig(path) {
@@ -30,7 +31,7 @@ export async function measureScreen(page, rules, fit) {
   return { data, weight, findings: evaluate({ data, weight, fit }, rules) };
 }
 
-export async function check(url, config = loadConfig(), { outDir } = {}) {
+export async function check(url, config = loadConfig(), { outDir, withPlan } = {}) {
   const browser = await launch();
   const results = [];
   try {
@@ -56,7 +57,7 @@ export async function check(url, config = loadConfig(), { outDir } = {}) {
           mkdirSync(outDir, { recursive: true });
           writeFileSync(join(outDir, `${vp.name}-${s.name}.png`), drawReport(m.weight));
         }
-        results.push({ viewport: vp.name, size: `${vp.width}x${vp.height}`, section: s.name, fit: s.fit, findings: m.findings });
+        results.push({ viewport: vp.name, size: `${vp.width}x${vp.height}`, section: s.name, fit: s.fit, findings: m.findings, ...(withPlan && m.findings.length ? { plan: plan({ data: m.data, weight: m.weight, fit: s.fit }, config.rules, m.findings) } : {}) });
       }
       await page.close();
     }

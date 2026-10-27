@@ -1,40 +1,36 @@
 ---
 name: layout-balance
-description: Keep any web page or Android screen visually balanced. After ANY change to UI, layout, CSS or a page, run the layout-balance tool, fix every failure from its numbers, and measure again until it says balanced. Use whenever a page or screen is built, edited, resized or reviewed for looks.
+description: Write web pages and Android screens visually balanced from the start, then check with the layout-balance tool and fix from its exact plan. Use whenever a page or screen is built, edited, resized or reviewed for looks.
 ---
 
-# Keep the UI balanced (measure, fix, measure again)
+# Balanced by construction, checked once
 
-The tool does the judging. It is deterministic: no AI, same page gives the same numbers. You only fix what it reports.
+Goal: no loop. Write it balanced (part 1). In a new or changed page, measure once, apply the exact plan (part 2), measure once to confirm (part 3).
 
-## Loop (never skip the last step)
-1. Find the URL of the running page (dev server, for example `http://localhost:3000`). Start the server if needed (background, keep its PID).
-2. Measure: `npx -y github:IFAKA/layout-balance <url> --json --out /tmp/lb`
-   - Exit code 0 = balanced. Exit code 1 = at least one screen fails.
-   - Without `--json` you get plain lines like `FAIL 1280x720 page` then `- fold-cut: content runs past the bottom (limit 0)`.
-   - Screenshots of every screen are in `/tmp/lb`. Look at the failing ones.
-3. Fix each finding with the table below. Change the smallest thing that moves the number. Fix the cause in the CSS or layout, not by hiding content.
-4. Measure again (step 2). Repeat until exit code 0 on all viewports (phone 390x800, small laptop 1024x640, laptop 1280x720, desktop 1440x900).
-5. Only then say it is done. Say the final line of the tool ("all N screens balanced"). If you could not reach 0, say which rule is left and why.
+## 1. Write it balanced (the limits are known numbers; follow them while you write)
+- Every full-screen section fits one screen: `min-height:100svh`, content inside it, nothing taller than `100svh`.
+- Centre the content column: `display:flex; flex-direction:column; justify-content:center; align-items:center`. Equal space above and below.
+- Any picture, video or big shape: `max-height:45svh` (the limit is 45% of the screen), `object-fit:contain`.
+- Side padding at least 16px: `padding-inline:max(16px,4vw)`. Text never closer than 12px to a side edge.
+- At least 8px between stacked blocks. Under a fixed top bar, add its height plus 4% of the screen as top padding.
+- Weight: do not put the heavy block (big picture, dark card, bright button) on one side only. Centre it, or balance it with a block on the other side. Keep the heavy block near the vertical middle.
+- Type and space in `clamp()` and `svh`, so one rule fits phone (390x800) and desktop (1440x900).
+- Never `width:100vw` with padding; `max-width:100%` and `overflow-wrap:anywhere` on long text.
+Weight (centre-x, centre-y) depends on pixel brightness, so only the tool can confirm it.
 
-Android: `npx -y github:IFAKA/layout-balance android screens.json [--serial id]` (phone over adb, same loop).
+## 2. Measure once, fix from the plan
+Run: `npx -y github:IFAKA/layout-balance <url> --plan --out /tmp/lb`
+- Needs Node 20+ and Chrome (or `npx playwright install chromium` once). Android: `... android screens.json --plan`.
+- Exit 0: done, say the tool's last line. Exit 1: for each failing screen it prints numbered steps: `[rule] selector: what to change, in px`, and a `css:` line. Apply them in order (sizes, then spacing, then one shift of the block).
+- Use the css line as a start, but write it responsive (`svh`, `clamp()`), so one fix holds on all four sizes (390x800, 1024x640, 1280x720, 1440x900). The same selector may appear on several screens: use the strictest number.
+- The line `plan check: pass` means the plan was tested on a copy of the layout (all geometry rules). Weight is an estimate (`weight is an estimate` appears): that is the part part 3 confirms.
 
-## How to fix each rule
-| Rule | Meaning | Fix |
-|---|---|---|
-| `centre-x` | Visual weight too far left or right (limit 10%) | Centre the content column; balance a side image with a block on the other side; equal side padding. |
-| `centre-y` | Weight too high or low (limit 20%) | Move the heavy block (big picture, dark card) toward the middle; add space above or remove space below. |
-| `whitespace-tilt` | Gap above content and gap below are very uneven (limit 12%) | Centre the content vertically (`min-height:100svh` plus `justify-content:center`), or give equal top and bottom padding. |
-| `dominance` | One picture is taller than 45% of the screen | Cap its height (`max-height:45svh`, `object-fit:contain`) or crop it. |
-| `fold-cut` | Content is cut by the bottom edge | Make the section fit: smaller type and spacing with `clamp()` and `svh`, fewer items, or let it scroll as a deliberate new section. |
-| `top-clearance` / `bottom-clearance` | Content too close to the top bar or bottom edge (4%) | Add padding equal to the bar height plus a gap. |
-| `edge-touch` / `edge-cut` | Text under 12px from a side edge, or past it | Add side padding (at least 16px); fix `width:100vw` and long words (`overflow-wrap:anywhere`). |
-| `overflow-x` | Page scrolls sideways | Find the element wider than the screen (`max-width:100%`), remove fixed widths. |
-| `min-gap` | Two stacked blocks closer than 8px | Add a gap or margin of at least 8px. |
+## 3. Confirm once
+Run the same command again (without changing limits). Exit 0 is the only proof of done.
+- If it still fails, the plan was wrong for that page. Read the new plan, apply it, confirm again. If two rounds do not fix it, stop and tell the user the rule left and why. Do not loop.
+- Look at the screenshots in `/tmp/lb` for what you changed.
 
 ## Rules for you
-- Fix by changing layout, never by lowering limits in `balance.config.json` (only the user may change limits).
-- A change that fixes one viewport can break another: always re-measure all four.
-- Passing is a floor, not taste. Still look at the screenshots of what you changed.
-- Do not claim balanced without a fresh run that exited 0.
-- Needs Node 20+ and Chrome (or `npx playwright install chromium` once).
+- Fix by changing layout. Never lower limits in `balance.config.json` (only the user may).
+- Do not say balanced without a fresh run that exited 0.
+- Passing is a floor, not taste.
