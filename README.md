@@ -97,6 +97,15 @@ Create `balance.config.json` in your project. Anything you leave out uses the de
 
 CLI flags: `--config file`, `--out dir` (writes the red-cross images), `--viewport WxH` (one custom size, for example your own browser window), `--sections css`, `--json`.
 
+## Android phone over adb
+
+```sh
+echo '[{ "name": "home", "start": "adb shell am start -n com.example/.MainActivity" }]' > screens.json
+npx github:IFAKA/layout-balance android screens.json --out report
+```
+
+It reads the screen tree with `uiautomator dump` and the picture with `screencap`, then runs the same rules. The status bar and navigation bar are the "top bar" and are skipped. Pixel limits (`minGap`, `minEdge`) are in dp and scaled to the phone. Use `--serial ID` when several devices are connected. Each screen needs a `start` command (or leave it out to check the screen that is open now).
+
 ## Use it as a library
 
 ```js

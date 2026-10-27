@@ -1,10 +1,15 @@
 #!/usr/bin/env node
+import { readFileSync } from "node:fs";
 import { check, loadConfig } from "./index.js";
+import { checkAndroid } from "./android.js";
 
 const args = process.argv.slice(2);
+const android = args[0] === "android"; if (android) args.shift();
 const flag = (n) => { const i = args.indexOf(n); return i >= 0 ? args.splice(i, 2)[1] : null; };
 if (args.includes("-h") || args.includes("--help") || !args.length) {
-  console.log(`layout-balance <url> [--config file] [--out dir] [--viewport WxH] [--sections css] [--json]
+  console.log(`layout-balance <url>
+layout-balance android <screens.json> [--serial id]  (phone over adb)
+   [--config file] [--out dir] [--viewport WxH] [--sections css] [--json]
 Measures the visual balance of each screen of a page. Exit 1 if any rule fails.`);
   process.exit(args.length ? 0 : 2);
 }
@@ -13,7 +18,10 @@ const config = loadConfig(flag("--config"));
 const vp = flag("--viewport"); if (vp) { const [w, h] = vp.split("x").map(Number); config.viewports = [{ name: vp, width: w, height: h }]; }
 const sec = flag("--sections"); if (sec) config.sections = sec;
 const out = flag("--out");
-const results = await check(args[0], config, { outDir: out });
+const serial = flag("--serial");
+const results = android
+  ? await checkAndroid(JSON.parse(readFileSync(args[0], "utf8")), config, { serial, outDir: out })
+  : await check(args[0], config, { outDir: out });
 const bad = results.filter((r) => r.findings.length);
 if (json) console.log(JSON.stringify(results, null, 2));
 else {

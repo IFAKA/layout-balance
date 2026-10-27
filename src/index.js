@@ -6,7 +6,7 @@ import { collect } from "./collect.js";
 import { evaluate } from "./rules.js";
 import { weightCentre, drawReport } from "./weight.js";
 
-export { evaluate, weightCentre };
+export { evaluate, weightCentre, drawReport };
 const here = dirname(fileURLToPath(import.meta.url));
 
 export function loadConfig(path) {
