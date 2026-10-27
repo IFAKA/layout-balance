@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Acme Notes</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: #0d0d12;
+    color: #ffffff;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+  }
+  section {
+    min-height: 100svh;
+    max-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding-block: 4svh;
+    padding-inline: max(16px, 4vw);
+    overflow: hidden;
+  }
+  section > * { max-width: 100%; }
+  h1, h2, h3, p { margin: 0; overflow-wrap: anywhere; }
+  h1 { font-size: clamp(32px, 6vw, 64px); line-height: 1.1; font-weight: 800; }
+  h2 { font-size: clamp(26px, 4.5vw, 44px); line-height: 1.15; font-weight: 700; }
+  h3 { font-size: clamp(18px, 2.2vw, 22px); font-weight: 600; }
+  p { font-size: clamp(16px, 2vw, 20px); color: #e6e6ee; }
+  .gap { height: clamp(12px, 3svh, 28px); }
+
+  /* Hero */
+  .hero-picture {
+    width: min(80vw, 560px);
+    height: 45svh;
+    max-height: 45svh;
+    border-radius: 16px;
+    background-color: #4a5bd6;
+    background-image: linear-gradient(135deg, #6d4aff 0%, #22c3d6 100%);
+    box-shadow: 0 16px 40px rgba(109, 74, 255, 0.35);
+  }
+  .hero-picture svg { width: 100%; height: 100%; display: block; }
+
+  /* Features */
+  .cards {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: clamp(12px, 2vw, 24px);
+    width: min(100%, 1000px);
+  }
+  .card {
+    flex: 1 1 240px;
+    max-width: 300px;
+    background: #1a1a24;
+    border: 1px solid #2c2c3a;
+    border-radius: 14px;
+    padding: clamp(16px, 2.5vw, 24px);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .card p { font-size: clamp(15px, 1.8vw, 17px); }
+  .icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: #6d4aff;
+    margin: 0 auto 4px;
+  }
+
+  /* CTA */
+  .cta-button {
+    display: inline-block;
+    background: #ffffff;
+    color: #0d0d12;
+    font-size: clamp(16px, 2vw, 20px);
+    font-weight: 700;
+    text-decoration: none;
+    padding: 14px 32px;
+    border-radius: 999px;
+    max-width: 100%;
+  }
+</style>
+</head>
+<body>
+
+<section id="hero">
+  <h1>Acme Notes</h1>
+  <div class="gap"></div>
+  <p>Write it down. Find it fast. Keep your thoughts in one calm place.</p>
+  <div class="gap"></div>
+  <div class="hero-picture" role="img" aria-label="App preview placeholder">
+    <svg viewBox="0 0 560 360" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+      <rect x="120" y="60" width="320" height="240" rx="14" fill="rgba(255,255,255,0.15)"/>
+      <rect x="150" y="100" width="260" height="14" rx="7" fill="rgba(255,255,255,0.45)"/>
+      <rect x="150" y="132" width="200" height="14" rx="7" fill="rgba(255,255,255,0.35)"/>
+      <rect x="150" y="164" width="230" height="14" rx="7" fill="rgba(255,255,255,0.35)"/>
+    </svg>
+  </div>
+</section>
+
+<section id="features">
+  <h2>Everything you need, nothing you don't</h2>
+  <div class="gap"></div>
+  <div class="cards">
+    <article class="card">
+      <div class="icon"></div>
+      <h3>Quick capture</h3>
+      <p>Open the app and type. Your note is saved before you finish the thought.</p>
+    </article>
+    <article class="card">
+      <div class="icon"></div>
+      <h3>Smart search</h3>
+      <p>Find any note in a second, by word, date or tag.</p>
+    </article>
+    <article class="card">
+      <div class="icon"></div>
+      <h3>Synced everywhere</h3>
+      <p>Your notes follow you to your phone, tablet and laptop.</p>
+    </article>
+  </div>
+</section>
+
+<section id="cta">
+  <h2>Start your first note today</h2>
+  <div class="gap"></div>
+  <p>Free to start. No card needed.</p>
+  <div class="gap"></div>
+  <a class="cta-button" href="#">Get Acme Notes</a>
+</section>
+
+</body>
+</html>
