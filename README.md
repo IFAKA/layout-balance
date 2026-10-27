@@ -67,13 +67,13 @@ Screens that are taller than the window (long scrolling sections) are only check
 
 These rules catch the common reasons a page "feels off". They cannot judge taste. A page can pass and still be ugly. The goal is a floor: no page ships top-heavy, crowded or cut off.
 
-## Get the fix, not just the failure
+## Get a tested fix, not just the failure
 
 ```sh
-npx github:IFAKA/layout-balance http://localhost:3000 --plan
+npx github:IFAKA/layout-balance http://localhost:3000 --fix
 ```
 
-For every failing screen it prints exact steps: the selector, the change in px and a CSS line (for example `img.hero: make it at most 307px tall`, `max-height: 42.6svh`). Sizes come first, then spacing, then one shift of the whole block. The plan is tested on a copy of the layout with the same rules before it is printed (`plan check: pass`). The weight rules are an estimate, so run the tool once more to confirm. `--json` includes the plan.
+The tool tries CSS on the real page, measures again, and repeats in a fixed order until every screen passes at all viewports. Then it loads the finished CSS on a fresh page and measures once more. Only if that passes it prints `TESTED FIX`: one CSS block to paste at the end of your stylesheet (it uses `!important`). No second run is needed. If it cannot reach a pass it says `NOT FULLY FIXED` and lists the screens and rules left. The same page always gives the same CSS. `--json` includes `fix`. `--plan` explains the steps in px.
 
 ## Use it in CI
 

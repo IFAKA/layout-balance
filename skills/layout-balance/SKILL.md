@@ -1,11 +1,11 @@
 ---
 name: layout-balance
-description: Write web pages and Android screens visually balanced from the start, then check with the layout-balance tool and fix from its exact plan. Use whenever a page or screen is built, edited, resized or reviewed for looks.
+description: Write web pages and Android screens visually balanced from the start, then check with the layout-balance tool and paste its tested fix. Use whenever a page or screen is built, edited, resized or reviewed for looks.
 ---
 
-# Balanced by construction, checked once
+# Balanced by construction, fixed once
 
-Goal: no loop. Write it balanced (part 1). In a new or changed page, measure once, apply the exact plan (part 2), measure once to confirm (part 3).
+Goal: no loop. Write it balanced (part 1). In a new or changed page, measure once and paste the tested fix (part 2). No confirm run.
 
 ## 1. Write it balanced (the limits are known numbers; follow them while you write)
 - Every full-screen section fits one screen: `min-height:100svh`, content inside it, nothing taller than `100svh`.
@@ -18,17 +18,13 @@ Goal: no loop. Write it balanced (part 1). In a new or changed page, measure onc
 - Never `width:100vw` with padding; `max-width:100%` and `overflow-wrap:anywhere` on long text.
 Weight (centre-x, centre-y) depends on pixel brightness, so only the tool can confirm it.
 
-## 2. Measure once, fix from the plan
-Run: `npx -y github:IFAKA/layout-balance <url> --plan --out /tmp/lb`
-- Needs Node 20+ and Chrome (or `npx playwright install chromium` once). Android: `... android screens.json --plan`.
-- Exit 0: done, say the tool's last line. Exit 1: for each failing screen it prints numbered steps: `[rule] selector: what to change, in px`, and a `css:` line. Apply them in order (sizes, then spacing, then one shift of the block).
-- Use the css line as a start, but write it responsive (`svh`, `clamp()`), so one fix holds on all four sizes (390x800, 1024x640, 1280x720, 1440x900). The same selector may appear on several screens: use the strictest number.
-- The line `plan check: pass` means the plan was tested on a copy of the layout (all geometry rules). Weight is an estimate (`weight is an estimate` appears): that is the part part 3 confirms.
-
-## 3. Confirm once
-Run the same command again (without changing limits). Exit 0 is the only proof of done.
-- If it still fails, the plan was wrong for that page. Read the new plan, apply it, confirm again. If two rounds do not fix it, stop and tell the user the rule left and why. Do not loop.
-- Look at the screenshots in `/tmp/lb` for what you changed.
+## 2. Measure once, paste the tested fix
+Run: `npx -y github:IFAKA/layout-balance <url> --fix --out /tmp/lb`
+- Needs Node 20+ and Chrome (or `npx playwright install chromium` once).
+- Exit 0: done, say the tool's last line.
+- Exit 1 and a `TESTED FIX` block: the tool already tried that CSS on the real page at all four sizes (390x800, 1024x640, 1280x720, 1440x900) and it passed. Paste the block at the end of the stylesheet (it uses `!important`, so order does not matter). Then you are done. Do not measure again.
+- `NOT FULLY FIXED`: paste the block anyway, fix by hand only the rules listed under it (markup or sizes), and tell the user what is left. Do not loop.
+- `--plan` (each step in px) is only for understanding a failure.
 
 ## Rules for you
 - Fix by changing layout. Never lower limits in `balance.config.json` (only the user may).

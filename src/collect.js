@@ -35,7 +35,7 @@ export function collect() {
     if (r.width < 2 || r.height < 2 || r.bottom <= 0 || r.top >= H || r.right <= 0 || r.left >= W) return;
     const vis = (Math.min(r.right, W) - Math.max(r.left, 0)) * (Math.min(r.bottom, H) - Math.max(r.top, 0));
     if (kind !== "text" && vis < r.width * r.height * 0.25) return; // mostly off screen: it belongs to the next screen
-    leaves.push({ sel: path(el), kind, x: r.left, y: r.top, w: r.width, h: r.height, fixed: inFixed(el), tag: el.tagName.toLowerCase() });
+    leaves.push({ sel: path(el), css: (window.__lbUniq || path)(el), kind, x: r.left, y: r.top, w: r.width, h: r.height, fixed: inFixed(el), tag: el.tagName.toLowerCase() });
   };
   for (const el of all) {
     if (["SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE"].includes(el.tagName) || !visible(el)) continue;
