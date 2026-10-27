@@ -1,4 +1,4 @@
-import { launch, getScreens, measureScreen, check, NO_MOTION } from "./index.js";
+import { launch, getScreens, measureScreen, check, settle, NO_MOTION } from "./index.js";
 
 /** Find CSS that makes every screen pass, by trying it on the real page and measuring again.
  *  Same page and config give the same CSS. Nothing is returned as `verified` unless a fresh run of the finished CSS passes everywhere.
@@ -7,27 +7,29 @@ export async function fix(url, config) {
   const browser = await launch();
   const found = [], where = new Map(); // found: { viewport, rules: Map<selector, Map<prop, value>> }; where: where each rule lives in the source
   try {
-    for (const vp of config.viewports) {
+    // The four viewports are independent: search them at the same time, then merge in viewport order (so the result never depends on timing).
+    const parts = await Promise.all(config.viewports.map(async (vp) => {
+      const localWhere = new Map();
       const page = await browser.newPage({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: 1 });
       const cdp = await page.context().newCDPSession(page);
       const sheets = {};
       cdp.on("CSS.styleSheetAdded", (e) => { sheets[e.header.styleSheetId] = e.header; });
       await cdp.send("DOM.enable"); await cdp.send("CSS.enable");
       await page.goto(url, { waitUntil: "networkidle" });
-      await page.waitForTimeout(config.settleMs);
+      await settle(page, config.settleMs);
       const rules = new Map(); // selector -> Map(prop -> value)
       const get = (sel, prop) => rules.get(sel)?.get(prop);
       const set = (sel, prop, val) => { if (!rules.has(sel)) rules.set(sel, new Map()); const r = rules.get(sel); if (r.get(prop) === val) return false; r.set(prop, val); return true; };
       const inject = async () => {
         await page.evaluate((css) => { let t = document.getElementById("lb-fix"); if (!t) { t = document.createElement("style"); t.id = "lb-fix"; document.head.appendChild(t); } t.textContent = css; }, NO_MOTION + render(rules));
-        await page.waitForTimeout(120);
+        await settle(page, config.settleMs);
       };
       const count = (await getScreens(page, config)).length;
       for (let i = 0; i < count; i++) {
         for (let round = 0; round < 12; round++) {
           const s = (await getScreens(page, config))[i];
           await page.evaluate((y) => window.scrollTo({ top: y, behavior: "instant" }), s.top);
-          await page.waitForTimeout(80);
+          await settle(page, config.settleMs);
           const m = await measureScreen(page, config.rules, s.fit);
           if (process.env.LB_DEBUG) console.error(vp.name, s.name, round, m.findings.map((f) => f.rule + ":" + f.message).join(" | "));
           if (!m.findings.length) break;
@@ -38,11 +40,12 @@ export async function fix(url, config) {
       await page.evaluate(() => document.getElementById("lb-fix")?.remove());
       for (const [sel, props] of rules) for (const prop of props.keys()) {
         const key = sel + "|" + prop;
-        if (!where.has(key)) where.set(key, await resolve(cdp, sheets, page.url(), sel, prop));
+        if (!localWhere.has(key)) localWhere.set(key, await resolve(cdp, sheets, page.url(), sel, prop));
       }
       await page.close();
-      found.push({ viewport: vp, rules });
-    }
+      return { entry: { viewport: vp, rules }, localWhere };
+    }));
+    for (const { entry, localWhere } of parts) { found.push(entry); for (const [k, v] of localWhere) if (!where.has(k)) where.set(k, v); }
   } finally { await browser.close(); }
 
   // First try the tidy form: elements that need the same value share the rule they already share.

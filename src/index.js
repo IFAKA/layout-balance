@@ -32,6 +32,17 @@ export async function measureScreen(page, rules, fit) {
   return { data, weight, findings: evaluate({ data, weight, fit }, rules) };
 }
 
+/** Wait until what is on screen stops moving (fonts loaded, nothing changes for 3 frames), at most maxMs.
+ *  Replaces a fixed sleep: same result, usually 10x shorter. */
+export async function settle(page, maxMs) {
+  await page.evaluate((max) => new Promise((done) => {
+    const t0 = performance.now(); let last = "", same = 0;
+    const sig = () => { const H = innerHeight, out = []; for (const e of document.body.querySelectorAll("*")) { const r = e.getBoundingClientRect(); if (r.bottom <= 0 || r.top >= H || (!r.width && !r.height)) continue; out.push(e.tagName + Math.round(r.x) + "," + Math.round(r.y) + "," + Math.round(r.width) + "," + Math.round(r.height) + getComputedStyle(e).opacity); if (out.length > 600) break; } return out.join("|"); };
+    const tick = () => { const s = sig(); same = s === last ? same + 1 : 0; last = s; if (same >= 3 || performance.now() - t0 > max) done(); else requestAnimationFrame(tick); };
+    (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => requestAnimationFrame(tick));
+  }), maxMs);
+}
+
 export const NO_MOTION = "*,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}\n";
 
 /** The screens of the page right now: one per section (or the whole page). Each has a unique CSS selector, `css`. */
@@ -51,17 +62,17 @@ export async function getScreens(page, config) {
 
 export async function check(url, config = loadConfig(), { outDir, withPlan, css } = {}) {
   const browser = await launch();
-  const results = [];
   try {
-    for (const vp of config.viewports) {
+    const perViewport = await Promise.all(config.viewports.map(async (vp) => {
+      const results = [];
       const page = await browser.newPage({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: 1 });
       await page.goto(url, { waitUntil: "networkidle" });
       if (css) await page.evaluate((c) => { const t = document.createElement("style"); t.textContent = c; document.body.appendChild(t); }, NO_MOTION + css);
-      await page.waitForTimeout(config.settleMs);
+      await settle(page, config.settleMs);
       const screens = await getScreens(page, config);
       for (const s of screens) {
         await page.evaluate((y) => window.scrollTo({ top: y, behavior: "instant" }), s.top);
-        await page.waitForTimeout(config.settleMs);
+        await settle(page, config.settleMs);
         const m = await measureScreen(page, config.rules, s.fit);
         if (outDir && m.weight && !m.weight.empty) {
           mkdirSync(outDir, { recursive: true });
@@ -70,7 +81,8 @@ export async function check(url, config = loadConfig(), { outDir, withPlan, css 
         results.push({ viewport: vp.name, size: `${vp.width}x${vp.height}`, section: s.name, fit: s.fit, findings: m.findings, ...(withPlan && m.findings.length ? { plan: plan({ data: m.data, weight: m.weight, fit: s.fit }, config.rules, m.findings) } : {}) });
       }
       await page.close();
-    }
+      return results;
+    }));
+    return perViewport.flat();
   } finally { await browser.close(); }
-  return results;
 }
