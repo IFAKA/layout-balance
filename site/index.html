@@ -47,7 +47,7 @@ footer{color:var(--mute);font-size:13px;padding:40px 20px;text-align:center;bord
 .stick{position:sticky;top:0;height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:64px 20px 24px;gap:2svh}
 .stick h2{font-size:clamp(26px,5svh,48px)}
 .demo{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:28px;align-items:center;width:100%;max-width:1040px;text-align:left}
-.stagecol{display:flex;justify-content:center}
+.stagecol{display:flex;flex-direction:column;align-items:center;justify-content:center}
 .stage{width:min(100%,calc((100svh - 230px)*1.7778 + 0px));background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
 .bar{display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:1px solid var(--line);font-size:11px;color:var(--mute)}
 .bar i{width:9px;height:9px;border-radius:50%;background:#3a3a3d}.bar span{margin-left:8px}
@@ -134,6 +134,18 @@ footer{color:var(--mute);font-size:13px;padding:40px 20px;text-align:center;bord
 .rules li{transition:opacity .4s,transform .4s,background .2s}
 @media(max-width:760px) and (max-height:760px){.stage{width:72%;margin:0 auto}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
+.gh{position:absolute;pointer-events:none;border:2px dashed #2997ff;background:rgba(41,151,255,.1);border-radius:4px;opacity:0;transition:opacity .35s}
+.gh.media{border-radius:50%}.s4 .gh,#pgs .gh{opacity:1}
+.uv{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0;transition:opacity .35s}
+.s3 .uv,.s4 .uv,#pgs .uv{opacity:1}
+.uv .gp,.uv .ct{opacity:0;transition:opacity .35s}.s4 .uv .gp,#pgs .uv .gp,.s4 .uv.cutting .ct,#pgs .uv.cutting .ct{opacity:1}
+.mtw{width:min(100%,360px);margin-top:14px;opacity:0;visibility:hidden;transition:opacity .35s,visibility .35s}.mtw.on{opacity:1;visibility:visible}
+#mt{width:100%;-webkit-appearance:none;appearance:none;height:10px;border-radius:99px;background:linear-gradient(to right,#ff453a,#30d158);outline-offset:4px}
+#mt::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:#fff;border:0;box-shadow:0 0 0 4px #2997ff66}
+#mt::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:#fff;border:0}
+.mtw:not(.used) #mt::-webkit-slider-thumb{animation:pu 1.4s ease-in-out infinite}
+@keyframes pu{50%{box-shadow:0 0 0 10px #2997ff00}}
+@media(prefers-reduced-motion:reduce){.mtw:not(.used) #mt::-webkit-slider-thumb{animation:none}}
 </style>
 </head>
 <body>
@@ -159,6 +171,7 @@ footer{color:var(--mute);font-size:13px;padding:40px 20px;text-align:center;bord
           <div class="fold"><span>bottom of the screen</span></div>
         </div>
       </div>
+      <div class="mtw" id="mtw"><input id="mt" type="range" min="0" max="100" value="0" aria-label="Move the page toward balance"></div>
     </div>
     <div class="read">
       <div class="tabs" id="tabs"><button data-s="crowded">Crowded page</button><button data-s="balanced">Balanced page</button></div>
@@ -262,45 +275,38 @@ function patchRows(el,R){const t=document.createElement("ul");t.innerHTML=rows(R
 function rows(R){return R.map(r=>`<li>${meter(r)}</li>`).join("")}
 function chips(R){const ok=g=>R.filter(r=>GRP[r[0]]===g).every(r=>r[2]);return["weight","space","fit"].map(g=>`<b class="chip ${ok(g)?"p":"f"}">${g} ${ok(g)?"✓":"✗"}</b>`).join("")+"<div>"+(R.every(r=>r[2])?"PASS · exit code 0":"FAIL · exit code 1")+"</div>"}
 let OVN=0;
-function rl(x,y,ux,uy,val,lim){const V='vector-effect="non-scaling-stroke"',P=(a,b)=>[x+ux*a,y+uy*a,x+ux*b,y+uy*b],ln=(a,b,c,w)=>b-a<=.001?"":`<line x1="${P(a,b)[0]}" y1="${P(a,b)[1]}" x2="${P(a,b)[2]}" y2="${P(a,b)[3]}" stroke="${c}" stroke-width="${w}" ${V}/>`,tk=ux?`<line x1="${x+ux*lim}" x2="${x+ux*lim}" y1="${y-3}" y2="${y+3}" stroke="#fff" stroke-width="2.5" ${V}/>`:`<line y1="${y+uy*lim}" y2="${y+uy*lim}" x1="${x-2}" x2="${x+2}" stroke="#fff" stroke-width="2.5" ${V}/>`;return ln(0,lim,"rgba(41,151,255,.45)",8)+ln(0,Math.min(val,lim),"#30d158",8)+ln(lim,val,"#ff453a",8)+tk}
-function drawOv(scr,m,R,listId,pg){scr.querySelectorAll(".ov,.ovl").forEach(n=>n.remove());const ok=n=>R.find(r=>r[0]===n)[2],col=o=>o?"#30d158":"#ff453a",p0=m.pic,top=Math.max(0,m.top),mb=Math.min(100,m.maxb),lim=p0.y+45,dEnd=Math.min(100,p0.y+p0.h),cOk=ok("centre-x")&&ok("centre-y"),wOk=ok("whitespace"),dOk=ok("dominance"),fOk=ok("fold-cut"),V='vector-effect="non-scaling-stroke"';
-const dx=m.cx-50,dy=m.cy-50,gt=Math.max(0,m.top),gb=Math.max(0,m.bot),px=v=>Math.max(4,Math.min(96,v));
-scr.insertAdjacentHTML("beforeend",`<svg aria-hidden="true" class="ov" viewBox="0 0 100 100" preserveAspectRatio="none"><defs><pattern id="h${++OVN}" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="3" stroke="#ff453a" stroke-width="1.4"/></pattern></defs>
-<g class="g-centre">${rl(50,50,Math.sign(dx)||1,0,Math.abs(dx),10)}${rl(m.cx,50,0,Math.sign(dy)||1,Math.abs(dy),20)}</g>
-<g class="g-tilt"><line x1="0" x2="100" y1="${top}" y2="${top}" stroke="#fff" stroke-opacity=".5" stroke-dasharray="3 4" ${V}/><line x1="0" x2="100" y1="${mb}" y2="${mb}" stroke="#fff" stroke-opacity=".5" stroke-dasharray="3 4" ${V}/><line x1="4" x2="4" y1="0" y2="${top}" stroke="#fff" stroke-opacity=".7" stroke-width="8" ${V}/><line x1="4" x2="4" y1="${mb}" y2="100" stroke="#fff" stroke-opacity=".7" stroke-width="8" ${V}/>${gt<gb?`<line x1="4" x2="4" y1="${gt}" y2="${gb}" stroke="${col(wOk)}" stroke-width="8" stroke-dasharray="4 3" ${V}/>`:`<line x1="4" x2="4" y1="${100-gb}" y2="${100-gt}" stroke="${col(wOk)}" stroke-width="8" stroke-dasharray="4 3" ${V}/>`}</g>
-<g class="g-dom"><rect x="${p0.x}" y="${p0.y}" width="${p0.w}" height="${dEnd-p0.y}" fill="none" stroke="#fff" stroke-opacity=".6" ${V}/><line x1="96" x2="96" y1="${p0.y}" y2="${Math.min(lim,dEnd)}" stroke="#2997ff" stroke-width="6" ${V}/><line x1="96" x2="96" y1="${Math.min(lim,dEnd)}" y2="${dEnd}" stroke="#ff453a" stroke-width="6" ${V}/><line x1="0" x2="100" y1="${lim}" y2="${lim}" stroke="#2997ff" stroke-width="2" stroke-dasharray="6 4" ${V}/></g>
-<g class="g-fold">${m.cut>0?`<rect x="0" y="93" width="100" height="7" fill="url(#h${OVN})"/><line x1="0" x2="100" y1="93" y2="93" stroke="#ff453a" stroke-width="2" ${V}/>`:`<line x1="0" x2="100" y1="99.6" y2="99.6" stroke="#30d158" stroke-width="2" ${V}/>`}</g></svg>
-<div class="ovl" aria-hidden="true"><b class="ovcap"></b>
-<i class="pl g-tilt ${wOk?"p":"f"}" style="left:7%;top:${top/2}%">top ${m.top.toFixed(0)}%</i><i class="pl g-tilt ${wOk?"p":"f"}" style="left:7%;top:${px((mb+100)/2)}%">bottom ${Math.max(0,m.bot).toFixed(0)}%</i>
-<i class="pl g-dom ${dOk?"p":"f"}" style="right:8%;top:${px(p0.y+p0.h/2)}%">picture ${p0.h.toFixed(0)}%</i><i class="pl g-dom b" style="left:2%;top:${px(lim)}%">limit 45%</i>
-<i class="pl g-centre ${cOk?"p":"f"}" style="left:${m.cx}%;top:${m.cy}%;margin-top:18px">weight point</i></div>`);
-const A={centre:cOk?"✓ Weight is inside the blue oval":Math.abs(dy)/20>Math.abs(dx)/10?(dy<0?"↓ Too high. Move content down.":"↑ Too low. Move content up."):(dx<0?"→ Too far left. Move content right.":"← Too far right. Move content left."),
-tilt:wOk?"✓ Top and bottom gaps are equal":"Top gap "+gt.toFixed(0)+"%, bottom gap "+gb.toFixed(0)+"%. "+(m.top<m.bot?"↓ Move down.":"↑ Move up."),
-dom:dOk?"✓ Picture is under the limit":"Picture is "+p0.h.toFixed(0)+"% tall. Limit is 45%. Make it shorter.",
-fold:fOk?"✓ Nothing is cut at the bottom":"↑ "+m.cut.toFixed(0)+"% is cut off the bottom. Move up or shrink."};
-const OK={centre:cOk,tilt:wOk,dom:dOk,fold:fOk};
-scr._ov={A,OK,R,listId};
-document.querySelectorAll("#"+listId+" li").forEach((li,i)=>{const k=MAP[R[i][0]];li.onclick=()=>{scr.dataset.sel=k;showOv(scr)};});scr.classList.add('nt');showOv(scr);requestAnimationFrame(()=>requestAnimationFrame(()=>scr.classList.remove('nt')))}
-const MAP={"centre-x":"centre","centre-y":"centre",whitespace:"tilt",dominance:"dom","fold-cut":"fold"};
-function showOv(scr,force){const o=scr._ov;if(!o)return;const pg=scr.id==="pgs",st=pg?9:step;
-let k=force||"";if(!k&&st>=3)k=st===3?"centre":(scr.dataset.sel||Object.keys(o.OK).find(x=>!o.OK[x])||"centre");
-scr.dataset.f=k;scr.querySelectorAll(".ov g,.ovl .pl").forEach(n=>n.classList.toggle("on",!!k&&n.classList.contains("g-"+k)));
-const c=scr.querySelector(".ovcap");c.innerHTML=k?"<div>"+o.A[k]+"</div>"+({centre:[0,1],tilt:[2],dom:[3],fold:[4]}[k]).map(i=>`<div class="mrow">${meter(o.R[i])}</div>`).join(""):"";c.className="ovcap"+(k?" on "+(o.OK[k]?"p":"f"):"");
-document.querySelectorAll("#"+o.listId+" li").forEach((li,i)=>li.classList.toggle("sel",!!k&&MAP[o.R[i][0]]===k))}
-function build(){screen.querySelectorAll(".el").forEach(n=>n.remove());const els=SC[cur];
-els.forEach(e=>{const d=document.createElement("div");d.className="el "+e.k+(e.y+e.h>100?" cut":"");
-d.style.cssText=`left:${e.x}%;top:${e.y}%;width:${e.w}%;height:${e.h}%;--b:${e.b}`;
-d.dataset.label=e.n+" "+Math.round(e.w*12.8)+"×"+Math.round(e.h*7.2);screen.prepend(d)});
-const m=measure(els),dx=m.cx-50,dy=m.cy-50;
-window.R=rulesOf(m);window.M=m;
+function fix(els){const pi=els.findIndex(e=>e.k==="media"),C=[];
+for(const k of [1,.92,.84,.76,.68,.6,.52,.45])for(let gd=-14;gd<=14;gd+=2)for(let pd=-24;pd<=24;pd+=3)C.push([Math.abs(gd)+.7*Math.abs(pd)+(1-k)*60,k,gd,pd]);
+C.sort((x,y)=>x[0]-y[0]);
+for(const[c,k,gd,pd]of C){const g=els.map((e,i)=>{if(i!==pi)return{...e,y:e.y+gd};const w=e.w*k,h=e.h*k;return{...e,x:e.x+(e.w-w)/2,w,h,y:e.y+pd}});
+if(rulesOf(measure(g,4)).every(r=>r[2])&&rulesOf(measure(g,1)).every(r=>r[2]))return c===0?null:g}return null}
+function lerp(a,b,t){return a.map((e,i)=>{const g=b[i],o={...e};for(const k of["x","y","w","h"])o[k]=e[k]+(g[k]-e[k])*t;return o})}
+function ensureUv(scr){if(scr.querySelector(".uv"))return;const V='vector-effect="non-scaling-stroke"';
+scr.insertAdjacentHTML("beforeend",`<svg aria-hidden="true" class="uv" viewBox="0 0 100 100" preserveAspectRatio="none"><defs><pattern id="hp${++OVN}" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="3" stroke="#ff453a" stroke-width="1.4"/></pattern></defs>
+<ellipse cx="50" cy="50" rx="10" ry="20" fill="#2997ff" fill-opacity=".1" stroke="#2997ff" stroke-width="1.5" stroke-dasharray="4 4" ${V}/>
+<line class="wl" x1="50" y1="50" x2="50" y2="50" stroke-width="2.5" ${V}/>
+<line class="gp gt" x1="2" x2="2" y1="0" y2="0" stroke="#fff" stroke-opacity=".8" stroke-width="5" ${V}/><line class="gp gb" x1="2" x2="2" y1="100" y2="100" stroke="#fff" stroke-opacity=".8" stroke-width="5" ${V}/>
+<rect class="ct" x="0" y="93" width="100" height="7" fill="url(#hp${OVN})"/></svg>`)}
+function stage(scr,els,gh,m,R,cross){scr.querySelectorAll(".el,.gh").forEach(n=>n.remove());
+if(gh)gh.forEach(e=>{const d=document.createElement("div");d.className="gh "+e.k;d.style.cssText=`left:${e.x}%;top:${e.y}%;width:${e.w}%;height:${e.h}%`;scr.prepend(d)});
+els.forEach(e=>{const d=document.createElement("div");d.className="el "+e.k+(e.y+e.h>100?" cut":"");d.style.cssText=`left:${e.x}%;top:${e.y}%;width:${e.w}%;height:${e.h}%;--b:${e.b}`;d.dataset.label=(e.n||"")+" "+Math.round(e.w*12.8)+"×"+Math.round(e.h*7.2);scr.prepend(d)});
+ensureUv(scr);const ok=R.slice(0,2).every(r=>r[2]),u=scr.querySelector(".uv"),wl=u.querySelector(".wl");
+wl.setAttribute("x2",m.cx);wl.setAttribute("y2",m.cy);wl.setAttribute("stroke",ok?"#30d158":"#ff453a");
+const gt=u.querySelector(".gt"),gb=u.querySelector(".gb");gt.setAttribute("y2",Math.max(0,m.top));gb.setAttribute("y1",100-Math.max(0,m.bot));
+const wOk=R[2][2];gt.setAttribute("stroke",wOk?"#30d158":"#fff");gb.setAttribute("stroke",wOk?"#30d158":"#fff");
+u.classList.toggle("cutting",m.cut>0);cross.className="cross r"+(scr.id==="pgs"||step>=4?(ok?" pass":" fail"):"");cross.style.left=m.cx+"%";cross.style.top=m.cy+"%"}
+let GH=null,T=0,E0=null;
+function render(){const els=GH?lerp(E0,GH,T):E0,m=measure(els);window.R=rulesOf(m);window.M=m;
 if($("rules").children.length===R.length)patchRows($("rules"),R);else $("rules").innerHTML=rows(R);
-drawOv(screen,m,R,"rules");document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.s===cur));apply()}
+stage(screen,els,GH,m,R,$("red"));apply()}
+function build(){E0=SC[cur];GH=fix(E0);T=0;$("mt").value=0;document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.s===cur));render()}
+$("mt").oninput=()=>{T=$("mt").value/100;$("mtw").classList.add("used");render()};
 function apply(){screen.className="screen s"+step+(SC[cur].some(e=>e.y+e.h>100)?" cutscene":"");
 $("num").textContent="Step "+(step+1)+" of 5";$("rt").textContent=STEPS[step][0];$("rc").textContent=STEPS[step][1];
-const red=$("red");red.className="cross r"+(step>=4?(R[0][2]&&R[1][2]?" pass":" fail"):"");red.style.left=(step>=3?M.cx:50)+"%";red.style.top=(step>=3?M.cy:50)+"%";
+const red=$("red");red.className="cross r"+(step>=4?(R[0][2]&&R[1][2]?" pass":" fail"):"");red.style.left=(step>=3?M.cx:50)+"%";red.style.top=(step>=3?M.cy:50)+"%";$("mtw").className="mtw"+(step>=4&&GH?" on":"")+($("mtw").classList.contains("used")?" used":"");
 [...$("rules").children].forEach((li,i)=>li.classList.toggle("on",step>=4||(step===3&&i<2)));
 const fail=R.some(r=>!r[2]),v=$("verdict");v.className="verdict"+(step>=4?" on "+(fail?"f":"p"):"");v.innerHTML=chips(R);
-document.querySelectorAll("#dots button").forEach((b,i)=>b.classList.toggle("on",i===step));showOv(screen)}
+document.querySelectorAll("#dots button").forEach((b,i)=>b.classList.toggle("on",i===step))}
 const how=$("how");$("dots").innerHTML=STEPS.map((_,i)=>`<button aria-label="Step ${i+1}"></button>`).join("");
 document.querySelectorAll("#dots button").forEach((b,i)=>b.onclick=()=>scrollTo({top:how.offsetTop+(i+.5)/5*(how.offsetHeight-innerHeight),behavior:"smooth"}));
 document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{cur=b.dataset.s;build()});
@@ -318,12 +324,9 @@ const hint=el.parentNode.querySelector(".hint"),cur=v[i]-mn,frac=cur/(mx-mn);hin
 if(pass[cur]){hint.textContent="";return}
 let best=-1,bd=1e9;pass.forEach((p,k)=>{if(p&&Math.abs(k-cur)<bd){bd=Math.abs(k-cur);best=k}});
 hint.textContent=best<0?"":(best<cur?"‹‹":"››");hint.className="hint"+(best<0?"":best<cur?" l":" r")}
-function run(){const v=IDS.map(i=>+g(i).value),els=pgEls(...v);
-sc.querySelectorAll(".el").forEach(n=>n.remove());
-els.forEach(e=>{const d=document.createElement("div");d.className="el "+e.k;d.style.cssText=`left:${e.x}%;top:${e.y}%;width:${e.w}%;height:${e.h}%;--b:${e.b}`;sc.prepend(d)});
-const m=measure(els),R=rulesOf(m);
-g("pgr").className="cross r "+(R[0][2]&&R[1][2]?"pass":"fail");g("pgr").style.left=m.cx+"%";g("pgr").style.top=m.cy+"%";
-if(!g("pgrules").children.length){g("pgrules").innerHTML=rows(R).replace(/<li>/g,'<li class="on">')}else patchRows(g("pgrules"),R);drawOv(sc,m,R,"pgrules",1);
+function run(){const v=IDS.map(i=>+g(i).value),els=pgEls(...v),gh=fix(els),m=measure(els),R=rulesOf(m);
+stage(sc,els,gh,m,R,g("pgr"));
+if(!g("pgrules").children.length){g("pgrules").innerHTML=rows(R).replace(/<li>/g,'<li class="on">')}else patchRows(g("pgrules"),R);
 g("pgv").className="verdict on "+(R.some(r=>!r[2])?"f":"p");g("pgv").innerHTML=chips(R);
 IDS.forEach((_,i)=>track(i,v))}
 IDS.forEach(i=>g(i).oninput=run);run()})();
