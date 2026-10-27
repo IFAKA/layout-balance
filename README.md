@@ -70,10 +70,10 @@ These rules catch the common reasons a page "feels off". They cannot judge taste
 ## Get a tested fix, not just the failure
 
 ```sh
-npx github:IFAKA/layout-balance http://localhost:3000 --fix
+npx github:IFAKA/layout-balance http://localhost:3000 --fix --write ./public
 ```
 
-The tool tries CSS on the real page, measures again, and repeats in a fixed order until every screen passes at all viewports. Then it loads the finished CSS on a fresh page and measures once more. Only if that passes it prints `TESTED FIX`: one CSS block to paste at the end of your stylesheet (it uses `!important`). No second run is needed. If it cannot reach a pass it says `NOT FULLY FIXED` and lists the screens and rules left. The same page always gives the same CSS. `--json` includes `fix`. `--plan` explains the steps in px.
+The tool tries changes on the real page, measures again, and repeats in a fixed order until every screen passes at every viewport. It then finds, through Chrome, the CSS rule that already sets each value and prints the edit to that rule: `style.css:37  .hero: height: 560px -> 42.7svh`. No patch, no `!important` (it keeps one only where your rule already has it). A last run of the finished edits on a clean copy must pass before it prints `TESTED FIX`. With `--write DIR` it makes the edits in your `.css` files and in `<style>` and `style=""` in your `.html`. Edits in generated CSS (bundlers, CSS-in-JS) are printed for you to make in the source. If it cannot reach a pass it says `NOT FULLY FIXED` and lists the screens and rules left. The same page always gives the same edits. `--json` includes `fix`. `--plan` explains the steps in px.
 
 ## Use it in CI
 

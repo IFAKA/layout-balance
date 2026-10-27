@@ -2,6 +2,7 @@
 import { readFileSync } from "node:fs";
 import { check, loadConfig } from "./index.js";
 import { fix } from "./fix.js";
+import { describe, write } from "./source.js";
 import { checkAndroid } from "./android.js";
 
 const args = process.argv.slice(2);
@@ -10,12 +11,14 @@ const flag = (n) => { const i = args.indexOf(n); return i >= 0 ? args.splice(i, 
 if (args.includes("-h") || args.includes("--help") || !args.length) {
   console.log(`layout-balance <url>
 layout-balance android <screens.json> [--serial id]  (phone over adb)
-   [--config file] [--out dir] [--viewport WxH] [--sections css] [--json] [--plan] [--fix]
---fix: try CSS on the real page, measure again, and print a block that passes on every screen (or what is left).
+   [--config file] [--out dir] [--viewport WxH] [--sections css] [--json] [--plan] [--fix [--write DIR]]
+--fix: try changes on the real page, measure again, and print the exact edits to your own CSS rules (file:line, old -> new) that pass on every screen.
+--write DIR: also make those edits in the CSS / HTML files under DIR (the folder the page is served from).
 --plan: for every failing screen, print the exact fixes (px, selector, CSS) and whether they pass.
 Measures the visual balance of each screen of a page. Exit 1 if any rule fails.`);
   process.exit(args.length ? 0 : 2);
 }
+const writeDir = flag("--write");
 const doFix = args.includes("--fix"); if (doFix) args.splice(args.indexOf("--fix"), 1);
 const withPlan = args.includes("--plan"); if (withPlan) args.splice(args.indexOf("--plan"), 1);
 const json = args.includes("--json"); if (json) args.splice(args.indexOf("--json"), 1);
@@ -28,7 +31,7 @@ const results = android
   ? await checkAndroid(JSON.parse(readFileSync(args[0], "utf8")), config, { serial, outDir: out })
   : await check(args[0], config, { outDir: out, withPlan });
 let fixed = null;
-if (doFix && !android && results.some((r) => r.findings.length)) fixed = await fix(args[0], config);
+if (doFix && !android && results.some((r) => r.findings.length)) { fixed = await fix(args[0], config); if (writeDir) fixed.written = write(fixed.edits, writeDir); }
 const bad = results.filter((r) => r.findings.length);
 if (json) console.log(JSON.stringify(fixed ? { results, fix: fixed } : results, null, 2));
 else {
@@ -42,8 +45,10 @@ else {
     }
   }
   if (fixed) {
-    console.log(`\n${fixed.verified ? `TESTED FIX: this CSS passes on all ${fixed.screens} screens. Paste it at the end of your stylesheet. Do not measure again.` : "NOT FULLY FIXED: this CSS helps, but these screens still fail:"}\n${fixed.css}`);
+    console.log(`\n${fixed.verified ? `TESTED FIX: these edits to your own CSS pass on all ${fixed.screens} screens. Make them. Do not measure again.` : "NOT FULLY FIXED: these edits help, but these screens still fail:"}`);
+    for (const l of describe(fixed.edits)) console.log("  " + l);
     if (!fixed.verified) for (const r of fixed.failing) console.log(`   ${r.size} ${r.section}: ${r.findings.map((f) => f.rule).join(", ")}`);
+    if (fixed.written) console.log(`written: ${fixed.written.written.join(", ") || "nothing"}${fixed.written.manual.length ? `; by hand: ${fixed.written.manual.length} edit(s) (not in a file under DIR)` : ""}`);
   }
   console.log(`\n${bad.length ? bad.length + " of " + results.length + " screens fail" : "all " + results.length + " screens balanced"}`);
 }

@@ -1,0 +1,7 @@
+body{margin:0;background:#101018;color:#fff;font-family:sans-serif}
+section{height:100vh;overflow:hidden}
+h1{font-size:96px;margin:0}h2{font-size:56px;margin:0}p{font-size:22px;margin:0}
+.pic{width:80%;height:620px;display:block}
+.row{display:flex}.box{width:300px;height:340px;background:#2a2a40;margin:0}
+.btn{display:inline-block;padding:10px 20px;background:#fff;color:#000}
+@media (max-width:600px){h1{font-size:60px}.row{flex-wrap:nowrap}}

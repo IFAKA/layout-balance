@@ -56,7 +56,7 @@ export async function check(url, config = loadConfig(), { outDir, withPlan, css 
     for (const vp of config.viewports) {
       const page = await browser.newPage({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: 1 });
       await page.goto(url, { waitUntil: "networkidle" });
-      if (css) await page.addStyleTag({ content: NO_MOTION + css });
+      if (css) await page.evaluate((c) => { const t = document.createElement("style"); t.textContent = c; document.body.appendChild(t); }, NO_MOTION + css);
       await page.waitForTimeout(config.settleMs);
       const screens = await getScreens(page, config);
       for (const s of screens) {

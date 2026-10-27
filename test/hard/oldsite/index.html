@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>layout-balance: measure the visual balance of any page</title>
+<meta name="description" content="A deterministic layout linter. Measures where the visual weight sits, the empty space, overflow and spacing of any web page or Android screen, and fails CI when it looks off. No AI.">
+<link rel="canonical" href="https://layout-balance.vercel.app/">
+<meta property="og:title" content="layout-balance: fail the build when a page looks off">
+<meta property="og:description" content="Deterministic visual balance checks for web pages and Android screens. Playwright, CI, no AI.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://layout-balance.vercel.app/">
+<meta property="og:image" content="https://layout-balance.vercel.app/crowded.png">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"layout-balance","applicationCategory":"DeveloperApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"license":"https://opensource.org/licenses/MIT","url":"https://layout-balance.vercel.app/","codeRepository":"https://github.com/IFAKA/layout-balance"}</script>
+<style>
+:root{--bg:#000;--card:#111113;--line:#2a2a2d;--mute:#a1a1a6;--blue:#2997ff}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:#f5f5f7;font:17px/1.5 Inter,-apple-system,"SF Pro Text",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+nav{position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;height:48px;padding:0 20px;background:rgba(0,0,0,.72);backdrop-filter:blur(20px);border-bottom:1px solid var(--line);font-size:15px}
+nav b{font-weight:600}
+a{color:var(--blue);text-decoration:none}
+.btn{background:#0071e3;color:#fff;border-radius:999px;padding:6px 14px;font-size:14px}
+section{max-width:1000px;margin:0 auto;padding:120px 20px 48px;text-align:center;min-height:100svh;display:flex;flex-direction:column;justify-content:center;align-items:center}
+h1{font-size:clamp(40px,8vw,84px);line-height:1.04;letter-spacing:-.04em;font-weight:600;text-wrap:balance}
+h2{font-size:clamp(30px,5vw,52px);line-height:1.08;letter-spacing:-.035em;font-weight:600;text-wrap:balance}
+.lead{color:var(--mute);font-size:clamp(18px,2.4vw,24px);margin:20px auto 0;max-width:640px}
+.cta{display:flex;gap:20px;justify-content:center;align-items:center;margin-top:32px;flex-wrap:wrap}
+.cta .btn{padding:12px 24px;font-size:17px}
+pre{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;text-align:left;overflow-x:auto;font:14px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;margin:32px auto 0;max-width:720px;width:100%;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:40px}
+.pair figure{background:var(--card);border-radius:22px;padding:14px}
+.pair img{width:100%;height:auto;border-radius:12px;display:block}
+.pair figcaption{color:var(--mute);font-size:14px;margin-top:10px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:40px;text-align:left}
+.card{background:var(--card);border-radius:22px;padding:22px}
+.card h3{font-size:19px;letter-spacing:-.02em}
+.card p{color:var(--mute);font-size:15px;margin-top:8px}
+p code{margin:0 2px}code{font:.9em ui-monospace,Menlo,monospace;color:#f5f5f7}
+footer{color:var(--mute);font-size:13px;padding:40px 20px;text-align:center;border-top:1px solid var(--line)}
+@media(max-width:700px){.pair,.grid{grid-template-columns:1fr}}
+.grid,.pair{width:100%}.card p{line-height:1.7}
+
+.how{height:560svh;position:relative}
+.stick{position:sticky;top:0;height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:64px 20px 24px;gap:2svh}
+.stick h2{font-size:clamp(26px,5svh,48px)}
+.demo{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:28px;align-items:center;width:100%;max-width:1040px;text-align:left}
+.stagecol{display:flex;flex-direction:column;align-items:center;justify-content:center}
+.stage{width:min(100%,calc((100svh - 230px)*1.7778 + 0px));background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.chrome{display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:1px solid var(--line);font-size:11px;color:var(--mute)}
+.chrome i{width:9px;height:9px;border-radius:50%;background:#3a3a3d}.chrome span{margin-left:8px}
+.screen{position:relative;aspect-ratio:16/9;overflow:hidden;background:#000}
+.el{position:absolute;transition:opacity .6s,background .6s,border-radius .6s,box-shadow .6s}
+.el::after{content:attr(data-label);position:absolute;left:0;top:0;transform:translateY(-100%);font:10px/1 ui-monospace,Menlo,monospace;background:var(--blue);color:#000;padding:2px 4px;border-radius:3px;opacity:0;transition:opacity .4s}
+.el::before{content:"";position:absolute;inset:0;border:1.5px dashed var(--blue);opacity:0;transition:opacity .4s}
+.s1 .el::before,.s1 .el::after{opacity:1}
+.s1 .el.cut::before{border-color:#ff453a}.s1 .el.cut::after{background:#ff453a;transform:translateY(0)}
+.s2 .el,.s3 .el,.s4 .el{opacity:var(--b);background:#fff!important;border-radius:4px}
+.s2 .el.media,.s3 .el.media,.s4 .el.media{border-radius:50%}
+.s2 .el,.s3 .el,.s4 .el{box-shadow:0 0 18px rgba(255,255,255,calc(var(--b)*.5))}
+.s4 .el{opacity:calc(var(--b)*.45)}
+.cross{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;opacity:0;transition:opacity .4s,left .9s cubic-bezier(.3,1.4,.5,1),top .9s cubic-bezier(.3,1.4,.5,1)}
+.cross::before,.cross::after{content:"";position:absolute;background:currentColor}
+.cross::before{left:12px;top:0;width:2px;height:100%}.cross::after{top:12px;left:0;height:2px;width:100%}
+.cross.w{color:#fff}.cross.r{color:#2997ff}.cross.r.pass{color:#30d158}.cross.r.fail{color:#ff453a}
+.s3 .cross,.s4 .cross{opacity:1}
+.fold{position:absolute;left:0;right:0;bottom:0;border-top:1.5px dashed #ff453a;opacity:0;transition:opacity .4s}
+.fold span{position:absolute;right:6px;bottom:3px;font-size:9px;color:#ff453a}
+.s1.cutscene .fold{opacity:1}
+.read{min-height:300px}
+.tabs{display:flex;gap:6px;margin-bottom:14px}
+.tabs button{background:var(--card);color:var(--mute);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+.tabs button.on{background:#f5f5f7;color:#000;border-color:#f5f5f7}
+.read h3{font-size:clamp(20px,3.4svh,28px);letter-spacing:-.03em;margin-top:2px}
+.cap{color:var(--mute);font-size:15px;margin-top:6px;min-height:3.2em}
+.rules{list-style:none;padding:0;margin:10px 0 0;font:12.5px/1 ui-monospace,Menlo,monospace}
+.rules li{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-top:1px solid var(--line);opacity:0;transform:translateX(8px);transition:opacity .4s,transform .4s}
+.rules li.on{opacity:1;transform:none}
+.rules .ok{color:#30d158}.rules .no{color:#ff453a}
+.verdict{margin-top:10px;font:600 15px ui-monospace,Menlo,monospace;opacity:0;transition:opacity .4s;min-height:1.2em}
+.verdict.on{opacity:1}.verdict.f{color:#ff453a}.verdict.p{color:#30d158}
+@media(max-width:760px){.demo{grid-template-columns:1fr;gap:12px}.read{min-height:0}.cap{min-height:0}.rules li{padding:5px 0}.stage{width:100%}.cap{font-size:14px}}
+.sl{display:block;font-size:13px;color:var(--mute);margin-bottom:12px}.sl input{display:block;width:100%;margin-top:6px;accent-color:#0071e3}
+#play .fold span{display:none}#play{padding-top:90px;padding-bottom:24px}#play .stage{width:min(100%,calc((100svh - 330px)*1.7778))}.sl{margin-bottom:8px}.sl input{margin-top:2px}
+@media(max-height:760px),(max-width:760px){#play .lead{display:none}#play .demo{margin-top:1svh!important}#play .rules li{padding:5px 0}}
+.ov{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.ov g{opacity:0;transition:opacity .4s}.ov g.hl,.s4 .ov g.fail,.pg.ov g.fail,.s3 .ov .centre,.s4 .ov .centre,.pg.ov .centre,.s3 .ov .zone,.s4 .ov .zone,.pg.ov .zone{opacity:1}.s3 .ov .centre line{stroke:#2997ff!important}
+.rules li{cursor:default}.rules li:hover{background:rgba(255,255,255,.05)}
+.rules em{font-style:normal;color:#6e6e73;display:inline-block;width:5.2em}
+.chip{display:inline-block;font-weight:600;padding:3px 8px;border-radius:999px;margin:0 6px 6px 0;font-size:12px}.chip.p{background:rgba(48,209,88,.15);color:#30d158}.chip.f{background:rgba(255,69,58,.16);color:#ff453a}
+.verdict{line-height:1.9}
+.rg{position:relative;padding-top:14px}#play h2{margin-bottom:12px}
+.sl input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:10px;border-radius:5px;background:var(--g,#2a2a2d);margin:0;outline:none}
+.sl input::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid #000;box-shadow:0 0 0 1.5px #aaa;cursor:grab}
+.sl input::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid #000;box-shadow:0 0 0 1.5px #aaa;cursor:grab}
+.hint{position:absolute;top:-4px;transform:translateX(-50%);font:700 15px/1 ui-monospace,Menlo,monospace;color:#30d158;font-style:normal;animation:nudge .7s ease-in-out infinite alternate}
+.hint.l{animation-name:nudgeL}
+@keyframes nudge{to{margin-left:7px}}@keyframes nudgeL{to{margin-left:-7px}}
+.ov g{opacity:0;transition:opacity .35s}.ov g.on{opacity:1}
+.ovl{position:absolute;inset:0;pointer-events:none}
+.pl{position:absolute;display:none;font:600 12px/1 ui-monospace,Menlo,monospace;font-style:normal;padding:4px 8px;border-radius:99px;background:#000d;border:1px solid;transform:translate(-50%,-50%);white-space:nowrap}
+.pl.on{display:block}.pl.p{color:#30d158}.pl.f{color:#ff453a}.pl.b{color:#2997ff}
+.g-tilt.pl{transform:translate(0,-50%)}.g-dom.pl{transform:translate(0,-50%)}.pl.g-dom.b{left:2%}
+.ovcap{position:absolute;left:50%;top:10px;transform:translateX(-50%);display:none;max-width:92%;text-align:center;font:600 15px/1.25 -apple-system,Inter,sans-serif;padding:8px 14px;border-radius:12px;background:#000e;border:1.5px solid;z-index:3}
+.ovcap.on{display:block}.ovcap.p{color:#30d158}.ovcap.f{color:#ff453a}
+.screen[data-f]:not([data-f="centre"]) .cross{opacity:0!important}
+.rules li.sel{background:rgba(41,151,255,.14);box-shadow:inset 3px 0 #2997ff}.rules li{cursor:pointer}
+.rules li{display:grid;grid-template-columns:6.6em 1fr 9.6em;gap:10px;align-items:center;opacity:0}.rules li.on{opacity:1}
+.rules li>span:last-child{text-align:right;white-space:nowrap}.rules li>span:first-child{color:#d0d0d5}
+.bar{position:relative;display:block;height:10px;border-radius:5px;background:rgba(255,255,255,.08);overflow:visible}
+.bar i{position:absolute;top:0;height:100%;display:block}
+.bar .al{left:0;background:rgba(41,151,255,.4);border-radius:5px 0 0 5px}.bar .us{left:0;background:#30d158;border-radius:5px 0 0 5px}.bar .ex{background:#ff453a;border-radius:0 5px 5px 0}
+.bar .tk{width:2px;top:-3px;height:16px;background:#fff;margin-left:-1px}
+.ovcap{min-width:300px}.ovcap>div:first-child{margin-bottom:6px}
+.mrow{display:grid;grid-template-columns:5.8em 1fr 8.8em;gap:8px;align-items:center;font:600 11.5px/1 ui-monospace,Menlo,monospace;margin-top:6px}.mrow>span:last-child{text-align:right;white-space:nowrap}.mrow>span:first-child{color:#d0d0d5;text-align:left}
+.mrow .ok{color:#30d158}.mrow .no{color:#ff453a}
+@media(max-width:760px){.rules li{grid-template-columns:5.6em 1fr 8.4em;gap:6px;font-size:11px}.ovcap{min-width:0;width:92%}.ovcap .mrow{display:none}.rules li{font-size:10px;grid-template-columns:6.3em 1fr 8.9em;gap:6px}}
+.pl{display:block!important;opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}.pl.on{opacity:1;visibility:visible}
+.ovcap{display:block!important;opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}.ovcap.on{opacity:1;visibility:visible}
+.nt .ov g,.nt .pl,.nt .ovcap{transition:none!important}
+.bar i{transition:width .3s cubic-bezier(.2,.8,.2,1),left .3s cubic-bezier(.2,.8,.2,1)}
+.cross{transition:opacity .3s,left .6s cubic-bezier(.2,.8,.2,1),top .6s cubic-bezier(.2,.8,.2,1)}
+#pgs .cross,#pgs .ov g{transition:opacity .25s}
+#pgs .cross{opacity:1}
+.rules li{transition:opacity .4s,transform .4s,background .2s}
+@media(max-width:760px) and (max-height:760px){.stage{width:72%;margin:0 auto}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
+.gh{position:absolute;pointer-events:none;border:2px dashed #2997ff;background:rgba(41,151,255,.1);border-radius:4px;opacity:0;transition:opacity .35s}
+.gh.media{border-radius:50%}.s4 .gh,#pgs .gh{opacity:1}
+.uv{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0;transition:opacity .35s}
+.s3 .uv,.s4 .uv,#pgs .uv{opacity:1}
+.uv .gp,.uv .ct{opacity:0;transition:opacity .35s}.s4 .uv .gp,#pgs .uv .gp,.s4 .uv.cutting .ct,#pgs .uv.cutting .ct{opacity:1}
+.mtw{width:min(100%,360px);margin-top:14px;opacity:0;visibility:hidden;transition:opacity .35s,visibility .35s}.mtw.on{opacity:1;visibility:visible}
+#mt{width:100%;-webkit-appearance:none;appearance:none;height:10px;border-radius:99px;background:linear-gradient(to right,#ff453a,#30d158);outline-offset:4px}
+#mt::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:#fff;border:0;box-shadow:0 0 0 4px #2997ff66}
+#mt::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:#fff;border:0}
+.mtw:not(.used) #mt::-webkit-slider-thumb{animation:pu 1.4s ease-in-out infinite}
+@keyframes pu{50%{box-shadow:0 0 0 10px #2997ff00}}
+@media(prefers-reduced-motion:reduce){.mtw:not(.used) #mt::-webkit-slider-thumb{animation:none}}
+.glide .el,.glide .gh{transition:left .6s cubic-bezier(.2,.8,.2,1),top .6s cubic-bezier(.2,.8,.2,1),width .6s cubic-bezier(.2,.8,.2,1),height .6s cubic-bezier(.2,.8,.2,1),opacity .6s!important}
+.el,.gh{will-change:left,top}
+.gh{border:1.5px dashed #5ab0ff;background:linear-gradient(180deg,#2997ff22,#2997ff0d);box-shadow:0 0 24px #2997ff22,inset 0 0 0 1px #2997ff11;border-radius:6px}
+.gh.media{border-radius:50%}.gh.gone{opacity:0!important}
+.uv ellipse{stroke-opacity:.7}
+.cross{filter:drop-shadow(0 0 6px currentColor)}
+.cross.r.pass,.cross.r.fail{width:30px;height:30px;margin:-15px 0 0 -15px}
+.screen{border-radius:0 0 14px 14px;box-shadow:inset 0 0 60px #000}
+.s2 .el,.s3 .el,.s4 .el{box-shadow:0 0 22px rgba(255,255,255,calc(var(--b)*.35))}
+.s2 .el.text,.s3 .el.text,.s4 .el.text{border-radius:6px;background:linear-gradient(180deg,#fff,#d8dce3)!important}
+.s2 .el.media,.s3 .el.media,.s4 .el.media{background:radial-gradient(closest-side,#fff,#aeb8c8)!important}
+
+/* a real page, then the weight map */
+.screen{container-type:size}
+.el{display:flex;align-items:center;justify-content:center;text-align:center;white-space:nowrap;color:#f5f5f7;font-size:calc(var(--fs)*1cqh);line-height:1.05}
+.el>span{transition:opacity .5s}
+.s2 .el>span,.s3 .el>span,.s4 .el>span{opacity:0}
+.el.text{font-weight:600;letter-spacing:-.035em}
+.el.sub{font-weight:400;letter-spacing:0;color:#a1a1a6}
+.el.box{background:#0071e3;border-radius:999px;font-weight:500}
+.el.media{border-radius:50%;background:radial-gradient(closest-side,#2997ff,#0d2a55 78%,#0a1a33)}
+.fnav{position:absolute;left:0;right:0;top:0;height:7%;display:flex;align-items:center;justify-content:space-between;padding:0 2.2%;border-bottom:1px solid #222;font-size:2.6cqh;transition:opacity .5s}
+.fnav b{font-weight:600}.fnav div{display:flex;gap:3cqh;color:#a1a1a6}
+.s2 .fnav,.s3 .fnav,.s4 .fnav{opacity:0}
+#how .stage{width:min(100%,calc((100svh - 300px)*1.7778))}
+.stage{background:#0c0c0e;box-shadow:0 30px 80px #2997ff14,0 0 0 1px #ffffff0d}
+.chrome span{flex:1;margin:0 40px 0 14px;background:#000;border-radius:6px;padding:3px 10px;text-align:center}
+.tabs{display:inline-flex;padding:3px;background:var(--card);border:1px solid var(--line);border-radius:999px;margin:0 0 14px}
+.tabs button{border:0;background:none;padding:6px 16px}.tabs button.on{background:#f5f5f7;color:#000}
+.steps{list-style:none;padding:0;display:flex;flex-direction:column;gap:2px;margin:0 0 14px}
+.steps button{all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;padding:4px 0;color:#6e6e73;font-weight:600;font-size:15px;transition:color .3s}
+.steps button:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:6px}
+.steps i{font-style:normal;width:22px;height:22px;border-radius:50%;border:1.5px solid #3a3a3d;display:grid;place-items:center;font-size:12px;flex:none;transition:.3s}
+.steps li.done button{color:#a1a1a6}.steps li.done i{border-color:#30d158;color:#30d158}
+.steps li.on button{color:#f5f5f7;font-size:20px;letter-spacing:-.02em}.steps li.on i{background:var(--blue);border-color:var(--blue);color:#000}
+.steps p{margin:0 0 4px 34px;color:var(--mute);font-size:15px;line-height:1.4;max-height:0;overflow:hidden;opacity:0;transition:max-height .4s,opacity .4s}
+.steps li.on p{max-height:6em;opacity:1}
+.rules{font:13px/1.2 Inter,-apple-system,system-ui,sans-serif;display:flex;flex-direction:column;gap:4px}
+.rules li{grid-template-columns:9.6em 1fr 8.2em;padding:8px 12px;border:0;border-radius:10px;background:var(--card)}
+.rules li>span:first-child{color:#f5f5f7;font-weight:500}.rules li>span:last-child{font-variant-numeric:tabular-nums;font-weight:600}
+.rules li:has(.no){box-shadow:inset 3px 0 #ff453a}
+.verdict{font:600 16px/1.3 Inter,-apple-system,system-ui,sans-serif;margin-top:10px;padding:10px 14px;border-radius:12px;min-height:0}
+.verdict b{font-weight:700}.verdict.f{background:#ff453a1f}.verdict.p{background:#30d1581f}
+@media(max-width:760px){.rules li{grid-template-columns:8.4em 1fr 7.4em;font-size:12px;padding:6px 10px}.steps li:not(.on){display:none}.steps li.on button{font-size:17px}}
+</style>
+</head>
+<body>
+<nav><b>layout-balance</b><a class="btn" href="https://github.com/IFAKA/layout-balance">GitHub</a></nav>
+<main>
+<section>
+  <h1>Fail the build when a page looks off.</h1>
+  <p class="lead">Measures the visual balance of any web page or Android screen. Numbers, not opinions. No AI.</p>
+  <div class="cta"><a class="btn" href="#start">Try it</a><a href="https://github.com/IFAKA/layout-balance">Read the docs ›</a></div>
+</section>
+
+<div id="how" class="how">
+<div class="stick">
+  <h2>How it works.</h2>
+  <div class="demo">
+    <div class="stagecol">
+      <div class="tabs" id="tabs"><button data-s="crowded">Crowded page</button><button data-s="balanced">Balanced page</button></div>
+      <div class="stage" id="stage">
+        <div class="chrome"><i></i><i></i><i></i><span>yourapp.com · 1280×720</span></div>
+        <div class="screen" id="screen">
+          <div class="fnav"><b>Brand</b><div><span>Features</span><span>Pricing</span></div></div>
+          <div class="cross w" style="left:50%;top:50%"></div>
+          <div class="cross r" id="red" style="left:50%;top:50%"></div>
+          <div class="fold"><span>bottom of the screen</span></div>
+        </div>
+      </div>
+      <div class="mtw" id="mtw"><input id="mt" type="range" min="0" max="100" value="0" aria-label="Move the page toward balance"></div>
+    </div>
+    <div class="read">
+      <ol class="steps" id="steps"></ol>
+      <ul class="rules" id="rules"></ul>
+      <div class="verdict" id="verdict"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<section id="play">
+  <h2>Break it yourself.</h2>
+  <p class="lead">Drag each dot into the green.</p>
+  <div class="demo" style="margin-top:3svh">
+    <div class="stagecol"><div class="stage"><div class="chrome"><i></i><i></i><i></i><span>yourapp.com · 1280×720</span></div>
+      <div class="screen" id="pgs"><div class="fnav"><b>Brand</b><div><span>Features</span><span>Pricing</span></div></div><div class="cross w" style="left:50%;top:50%;opacity:1"></div><div class="cross r" id="pgr" style="opacity:1"></div><div class="fold" style="opacity:1"><span>bottom of the screen</span></div></div></div></div>
+    <div class="read">
+      <label class="sl">Heading size<div class="rg"><input id="pgh" type="range" min="6" max="30" value="12"><i class="hint"></i></div></label>
+      <label class="sl">Picture size<div class="rg"><input id="pgz" type="range" min="15" max="80" value="40"><i class="hint"></i></div></label>
+      <label class="sl">Picture position<div class="rg"><input id="pgy" type="range" min="25" max="90" value="48"><i class="hint"></i></div></label>
+      <ul class="rules" id="pgrules"></ul><div class="verdict on" id="pgv"></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Proof, not promises.</h2>
+  <div class="grid" style="margin-top:4svh">
+    <div class="card"><h3>4 of 28</h3><p>screens failed on my own landing page. The tool found them, I fixed them, all 28 pass.</p></div>
+    <div class="card"><h3>Same result</h3><p>No randomness, no AI. Same page and same window size give the same numbers, every run.</p></div>
+    <div class="card"><h3>Measures only</h3><p>It never edits your page. It reads, calculates, prints, and exits. Nothing runs in the background.</p></div>
+  </div>
+  <div class="grid" style="margin-top:14px">
+    <div class="card"><h3>Web</h3><p>Playwright and Chrome. Four window sizes by default.</p></div>
+    <div class="card"><h3>Android</h3><p>Any phone over <code>adb</code>. Reads the screen tree, no app changes.</p></div>
+    <div class="card"><h3>CI</h3><p>Exit code 1 fails the build. Reports save as images with the crosses.</p></div>
+  </div>
+</section>
+
+<section id="start">
+  <h2>One command.</h2>
+  <p class="lead">Needs Node 20 and Chrome. Exit code 1 when any screen fails, so CI stops.</p>
+  <pre>npx github:IFAKA/layout-balance http://localhost:3000
+
+FAIL 1280x720  page
+  - dominance: one picture takes 75% of the screen (limit 0.45)
+  - top-clearance: content starts 2px under the top bar</pre>
+</section>
+
+<section>
+  <h2>What it checks.</h2>
+  <div class="grid">
+    <div class="card"><h3>Weight centre</h3><p>Is the visual weight too far left, right, high or low? <code>centre-x</code> <code>centre-y</code></p></div>
+    <div class="card"><h3>Whitespace</h3><p>Is the empty space above and below very uneven? <code>whitespace-tilt</code></p></div>
+    <div class="card"><h3>Dominance</h3><p>Is one picture taller than 45% of the screen? <code>dominance</code></p></div>
+    <div class="card"><h3>Cut off</h3><p>Is text cut by the fold or the side edge? <code>fold-cut</code> <code>edge-cut</code></p></div>
+    <div class="card"><h3>Spacing</h3><p>Are two blocks closer than 8 px? <code>min-gap</code> <code>edge-touch</code></p></div>
+    <div class="card"><h3>Overflow</h3><p>Does the page scroll sideways? <code>overflow-x</code></p></div>
+  </div>
+</section>
+
+<section>
+  <h2>Any screen with a tree.</h2>
+  <p class="lead">The web uses Playwright. Android uses <code>adb</code> and <code>uiautomator</code>. The same rules run on both.</p>
+  <pre>npx github:IFAKA/layout-balance android screens.json --out report</pre>
+</section>
+
+<section>
+  <h2>Let your AI agent fix it.</h2>
+  <p class="lead">Install the skill once. After every UI change the agent measures, fixes each failure from the numbers, and measures again until the exit code is 0.</p>
+  <pre>mkdir -p ~/.claude/skills/layout-balance &amp;&amp; curl -fsSL https://raw.githubusercontent.com/IFAKA/layout-balance/master/skills/layout-balance/SKILL.md -o ~/.claude/skills/layout-balance/SKILL.md</pre>
+</section>
+
+<section>
+  <h2>Same page, same result.</h2>
+  <p class="lead">It is arithmetic on box positions and one screenshot. It runs once and exits. It never changes your page. Open source, MIT.</p>
+  <div class="cta"><a class="btn" href="https://github.com/IFAKA/layout-balance">Get it on GitHub</a></div>
+<p style="color:var(--mute);font-size:13px;margin-top:48px">layout-balance · MIT · a deterministic layout linter for Playwright and Android</p>
+</section>
+</main>
+<!--layout-balance · MIT · a deterministic layout linter for Playwright and Android-->
+<script>
+const HEAD="Your phone.<br>Without looking.",SUB="One earbud button. The phone speaks. You click.";
+const SC={
+crowded:[{k:"text",n:"heading",t:HEAD,l:2,x:15,y:9,w:70,h:22,b:1},{k:"text",c:"sub",n:"text",t:SUB,fs:3,x:25,y:32,w:50,h:5,b:.6},{k:"media",n:"picture",x:28.9,y:38,w:42.2,h:75,b:.45}],
+balanced:[{k:"text",n:"heading",t:HEAD,l:2,x:25,y:12,w:50,h:16,b:1},{k:"text",c:"sub",n:"text",t:SUB,fs:3,x:25,y:30,w:50,h:5,b:.6},{k:"box",n:"button",t:"Get started",fs:2.6,x:43,y:37,w:14,h:6,b:.8},{k:"media",n:"picture",x:38.2,y:46,w:23.6,h:42,b:.45}]};
+const STEPS=[["Open the page","A real browser loads it at 1280×720 and waits until the animations stop."],
+["Read every box","The page tells us where each text, picture and button is. Exact numbers, no guessing."],
+["Weigh the pixels","One screenshot. Brighter pixels are heavier. The dark background weighs nothing."],
+["Find the balance point","Like a see-saw. White cross: the middle of the screen. Red cross: where the weight really is."],
+["Check each limit","Every number is compared with its limit. One failure and the command exits with code 1."]];
+let cur="crowded",step=0;
+const $=id=>document.getElementById(id),screen=$("screen");
+function inside(e,x,y){if(e.k!=="media")return x>=e.x&&x<e.x+e.w&&y>=e.y&&y<e.y+e.h;const cx=e.x+e.w/2,cy=e.y+e.h/2;return((x-cx)/(e.w/2))**2+((y-cy)/(e.h/2))**2<=1}
+function measure(els,st=.5){let sw=0,sx=0,sy=0;const rows=Array(20).fill(0);for(let y=st/2;y<100;y+=st)for(let x=st/2;x<100;x+=st)for(const e of els)if(inside(e,x,y)){sw+=e.b;sx+=e.b*x;sy+=e.b*y;rows[Math.floor(y/5)]+=e.b}
+const top=Math.min(...els.map(e=>e.y)),bot=100-Math.max(...els.map(e=>e.y+e.h));
+const pic=els.filter(e=>e.k==="media").sort((a,b)=>b.h-a.h)[0],mx=Math.max(...rows)||1;return{cx:sx/sw,cy:sy/sw,top,bot,maxb:100-bot,pic,rows:rows.map(r=>r/mx),tilt:Math.abs(top-bot),dom:pic.h,cut:Math.max(0,-bot)}}
+function rulesOf(m){const dx=m.cx-50,dy=m.cy-50,f=v=>Math.abs(v).toFixed(0)+"%";return[["centre-x",f(dx)+" off",Math.abs(dx)<=10,Math.abs(dx),10,dx<0?"→":"←"],["centre-y",f(dy)+(dy<0?" too high":" too low"),Math.abs(dy)<=20,Math.abs(dy),20,dy<0?"↓":"↑"],["whitespace",f(m.tilt)+" uneven",m.tilt<=12,m.tilt,12,m.top<m.bot?"↓":"↑"],["dominance","picture "+f(m.dom),m.dom<=45,m.dom,45,"↕"],["fold-cut",f(m.cut)+" cut",m.cut===0,m.cut,0,"↑"]]}
+function bar(r){const val=r[3],lim=r[4],full=lim>0?lim*2:20,v=Math.min(val,full),aw=lim/full*100,uw=Math.min(v,lim)/full*100,ew=v>lim?(v-lim)/full*100:0;return`<span class="bar"><i class="al" style="width:${aw}%"></i><i class="us" style="width:${uw}%"></i><i class="ex" style="left:${aw}%;width:${ew}%"></i><i class="tk" style="left:${aw}%"></i></span>`}
+function meter(r){return`<span>${NAME[r[0]]}</span>${bar(r)}<span class="${r[2]?"ok":"no"}">${r[2]?"✓":r[5]} ${r[3].toFixed(0)}% · max ${r[4]}%</span>`}
+const NAME={"centre-x":"Left–right balance","centre-y":"Up–down balance",whitespace:"Even space",dominance:"Picture size","fold-cut":"Cut at the bottom"};
+function patchRows(el,R){const t=document.createElement("ul");t.innerHTML=rows(R);if(el.children.length!==R.length){el.innerHTML=t.innerHTML;return}
+[...el.children].forEach((li,i)=>{const n=t.children[i];li.querySelectorAll(".bar i").forEach((b,j)=>b.style.cssText=n.querySelectorAll(".bar i")[j].style.cssText);const a=li.lastElementChild,c=n.lastElementChild;a.textContent=c.textContent;a.className=c.className})}
+function rows(R){return R.map(r=>`<li>${meter(r)}</li>`).join("")}
+function chips(R){const n=R.filter(r=>!r[2]).length;return n?`<b>${n} of ${R.length} checks fail</b> · exit code 1`:`<b>All ${R.length} checks pass</b> · exit code 0`}
+let OVN=0;
+function fix(els){const pi=els.findIndex(e=>e.k==="media"),C=[];
+for(const k of [1,.92,.84,.76,.68,.6,.52,.45])for(let gd=-14;gd<=14;gd+=2)for(let pd=-24;pd<=24;pd+=3)C.push([Math.abs(gd)+.7*Math.abs(pd)+(1-k)*60,k,gd,pd]);
+C.sort((x,y)=>x[0]-y[0]);
+for(const[c,k,gd,pd]of C){const g=els.map((e,i)=>{if(i!==pi)return{...e,y:e.y+gd};const w=e.w*k,h=e.h*k;return{...e,x:e.x+(e.w-w)/2,w,h,y:e.y+pd}});
+if(g.some(e=>e.k!=="media"&&e.y<8))continue;
+if(rulesOf(measure(g,4)).every(r=>r[2])&&rulesOf(measure(g,1)).every(r=>r[2]))return c===0?null:g}return null}
+function lerp(a,b,t){return a.map((e,i)=>{const g=b[i],o={...e};for(const k of["x","y","w","h"])o[k]=e[k]+(g[k]-e[k])*t;return o})}
+function ensureUv(scr){if(scr.querySelector(".uv"))return;const V='vector-effect="non-scaling-stroke"';
+scr.insertAdjacentHTML("beforeend",`<svg aria-hidden="true" class="uv" viewBox="0 0 100 100" preserveAspectRatio="none"><defs><pattern id="hp${++OVN}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#ff453a" stroke-width="1.2"/></pattern></defs>
+<ellipse cx="50" cy="50" rx="10" ry="20" fill="#2997ff" fill-opacity=".1" stroke="#2997ff" stroke-width="1.5" stroke-dasharray="4 4" ${V}/>
+<line class="wl" x1="50" y1="50" x2="50" y2="50" stroke-width="2.5" ${V}/>
+<line class="gp gt" x1="2" x2="2" y1="0" y2="0" stroke="#fff" stroke-opacity=".8" stroke-width="5" ${V}/><line class="gp gb" x1="2" x2="2" y1="100" y2="100" stroke="#fff" stroke-opacity=".8" stroke-width="5" ${V}/>
+<rect class="ct" x="0" y="93" width="100" height="7" fill="url(#hp${OVN})" fill-opacity=".45"/></svg>`)}
+function sync(scr,sel,list,mk){const have=[...scr.querySelectorAll(sel)];list.forEach((e,i)=>{let d=have[i];if(!d){d=document.createElement("div");scr.prepend(d)}mk(d,e)});have.slice(list.length).forEach(n=>n.remove())}
+const pos=(d,e)=>{d.style.left=e.x+"%";d.style.top=e.y+"%";d.style.width=e.w+"%";d.style.height=e.h+"%"};
+function stage(scr,els,gh,m,R,cross){
+if(gh)scr._gh=gh;sync(scr,".gh",gh||scr._gh||[],(d,e)=>{const c="gh "+e.k+(gh?"":" gone");if(d.className!==c)d.className=c;pos(d,e)});
+sync(scr,".el",els,(d,e)=>{const c="el "+e.k+(e.c?" "+e.c:"")+(e.y+e.h>100?" cut":"");if(d.className!==c)d.className=c;pos(d,e);d.style.setProperty("--b",e.b);d.style.setProperty("--fs",e.fs||e.h/(e.l||1)/1.05);if(d.dataset.t!==(e.t||"")){d.dataset.t=e.t||"";d.innerHTML=e.t?`<span>${e.t}</span>`:""}d.dataset.label=(e.n||"")+" "+Math.round(e.w*12.8)+"×"+Math.round(e.h*7.2)});
+ensureUv(scr);const ok=R.slice(0,2).every(r=>r[2]),u=scr.querySelector(".uv"),wl=u.querySelector(".wl");
+wl.setAttribute("x2",m.cx);wl.setAttribute("y2",m.cy);wl.setAttribute("stroke",ok?"#30d158":"#ff453a");
+const gt=u.querySelector(".gt"),gb=u.querySelector(".gb");gt.setAttribute("y2",Math.max(0,m.top));gb.setAttribute("y1",100-Math.max(0,m.bot));
+const wOk=R[2][2];gt.style.opacity=gb.style.opacity=wOk?0:1;
+u.classList.toggle("cutting",m.cut>0);cross.className="cross r"+(scr.id==="pgs"||step>=4?(ok?" pass":" fail"):"");cross.style.left=m.cx+"%";cross.style.top=m.cy+"%"}
+let GH=null,T=0,E0=null;
+function render(){const els=GH?lerp(E0,GH,T):E0,m=measure(els);window.R=rulesOf(m);window.M=m;
+if($("rules").children.length===R.length)patchRows($("rules"),R);else $("rules").innerHTML=rows(R);
+stage(screen,els,GH,m,R,$("red"));apply()}
+function build(){screen.classList.add("glide");clearTimeout(build.t);build.t=setTimeout(()=>screen.classList.remove("glide"),700);E0=SC[cur];GH=fix(E0);T=0;$("mt").value=0;document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.s===cur));render()}
+$("mt").oninput=()=>{T=$("mt").value/100;$("mtw").classList.add("used");render()};
+function apply(){screen.className="screen s"+step+(screen.classList.contains("glide")?" glide":"")+(SC[cur].some(e=>e.y+e.h>100)?" cutscene":"");
+const red=$("red");red.className="cross r"+(step>=4?(R[0][2]&&R[1][2]?" pass":" fail"):"");red.style.left=(step>=3?M.cx:50)+"%";red.style.top=(step>=3?M.cy:50)+"%";$("mtw").className="mtw"+(step>=4&&GH?" on":"")+($("mtw").classList.contains("used")?" used":"");
+[...$("rules").children].forEach((li,i)=>li.classList.toggle("on",step>=4||(step===3&&i<2)));
+const fail=R.some(r=>!r[2]),v=$("verdict");v.className="verdict"+(step>=4?" on "+(fail?"f":"p"):"");v.innerHTML=chips(R);
+document.querySelectorAll("#steps li").forEach((li,i)=>{li.classList.toggle("on",i===step);li.classList.toggle("done",i<step)})}
+const how=$("how");$("steps").innerHTML=STEPS.map((s,i)=>`<li><button><i>${i+1}</i>${s[0]}</button><p>${s[1]}</p></li>`).join("");
+document.querySelectorAll("#steps button").forEach((b,i)=>b.onclick=()=>scrollTo({top:how.offsetTop+(i+.5)/5*(how.offsetHeight-innerHeight),behavior:"smooth"}));
+document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{cur=b.dataset.s;build()});
+function onScroll(){const r=how.getBoundingClientRect(),p=Math.min(.999,Math.max(0,-r.top/(r.height-innerHeight))),n=Math.floor(p*5);if(n!==step){step=n;apply()}}
+addEventListener("scroll",onScroll,{passive:true});build();onScroll();
+</script>
+<script>
+(function(){const sc=document.getElementById("pgs"),g=id=>document.getElementById(id),IDS=["pgh","pgz","pgy"];
+const pgEls=(H,Z,Y)=>[{k:"text",t:HEAD,l:2,x:20,y:9,w:60,h:H,b:1},{k:"text",c:"sub",t:SUB,fs:3,x:25,y:9+H+3,w:50,h:5,b:.6},{k:"media",x:50-Z*.28,y:Y,w:Z*.5625,h:Z,b:.45}];
+const ok=(v)=>rulesOf(measure(pgEls(...v),1)).every(r=>r[2]);
+function track(i,v){const el=g(IDS[i]),mn=+el.min,mx=+el.max,pass=[];for(let x=mn;x<=mx;x++){const w=v.slice();w[i]=x;pass.push(ok(w))}
+let st=[],a=0;for(let x=1;x<=pass.length;x++)if(x===pass.length||pass[x]!==pass[a]){const p=a/(pass.length-1)*100,q=(x===pass.length?pass.length-1:x-.0)/(pass.length-1)*100;st.push(`${pass[a]?"#30d158":"#4a1f1d"} ${p}% ${q}%`);a=x}
+el.style.setProperty("--g","linear-gradient(to right,"+st.join(",")+")");
+const hint=el.parentNode.querySelector(".hint"),cur=v[i]-mn,frac=cur/(mx-mn);hint.style.left=`calc(11px + (100% - 22px) * ${frac})`;
+if(pass[cur]){hint.textContent="";return}
+let best=-1,bd=1e9;pass.forEach((p,k)=>{if(p&&Math.abs(k-cur)<bd){bd=Math.abs(k-cur);best=k}});
+hint.textContent=best<0?"":(best<cur?"‹‹":"››");hint.className="hint"+(best<0?"":best<cur?" l":" r")}
+function run(){const v=IDS.map(i=>+g(i).value),els=pgEls(...v),gh=fix(els),m=measure(els),R=rulesOf(m);
+stage(sc,els,gh,m,R,g("pgr"));
+if(!g("pgrules").children.length){g("pgrules").innerHTML=rows(R).replace(/<li>/g,'<li class="on">')}else patchRows(g("pgrules"),R);
+g("pgv").className="verdict on "+(R.some(r=>!r[2])?"f":"p");g("pgv").innerHTML=chips(R);
+IDS.forEach((_,i)=>track(i,v))}
+IDS.forEach(i=>g(i).oninput=run);run()})();
+</script>
+</body>
+</html>

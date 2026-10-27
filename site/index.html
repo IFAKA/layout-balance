@@ -172,10 +172,10 @@ exit code 1</pre><button>Copy</button></div>
 Any phone over adb. Reads the screen tree, no app changes.</pre><button>Copy</button></div>
     <div class="code card" data-p="agent" hidden><pre>mkdir -p ~/.claude/skills/layout-balance &amp;&amp; curl -fsSL https://raw.githubusercontent.com/IFAKA/layout-balance/master/skills/layout-balance/SKILL.md -o ~/.claude/skills/layout-balance/SKILL.md
 
-npx github:IFAKA/layout-balance URL --fix
+npx github:IFAKA/layout-balance URL --fix --write ./public
 <u>TESTED FIX: passes on all 8 screens.</u>
-#hero{display:flex!important; ...}
-img.hero{max-height:42.7svh!important}</pre><button>Copy</button></div>
+style.css:37  img.hero: max-height: 60svh -&gt; 42.7svh
+style.css:12  #hero: add padding-inline: 5vw</pre><button>Copy</button></div>
   </div>
 </section>
 
