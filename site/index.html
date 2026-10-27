@@ -113,6 +113,16 @@ footer{color:var(--mute);font-size:13px;padding:40px 20px;text-align:center;bord
 .ovcap.on{display:block}.ovcap.p{color:#30d158}.ovcap.f{color:#ff453a}
 .screen[data-f]:not([data-f="centre"]) .cross{opacity:0!important}
 .rules li.sel{background:rgba(41,151,255,.14);box-shadow:inset 3px 0 #2997ff}.rules li{cursor:pointer}
+.rules li{display:grid;grid-template-columns:6.6em 1fr 9.6em;gap:10px;align-items:center;opacity:0}.rules li.on{opacity:1}
+.rules li>span:last-child{text-align:right;white-space:nowrap}.rules li>span:first-child{color:#d0d0d5}
+.bar{position:relative;display:block;height:10px;border-radius:5px;background:rgba(255,255,255,.08);overflow:visible}
+.bar i{position:absolute;top:0;height:100%;display:block}
+.bar .al{left:0;background:rgba(41,151,255,.4);border-radius:5px 0 0 5px}.bar .us{left:0;background:#30d158;border-radius:5px 0 0 5px}.bar .ex{background:#ff453a;border-radius:0 5px 5px 0}
+.bar .tk{width:2px;top:-3px;height:16px;background:#fff;margin-left:-1px}
+.ovcap{min-width:300px}.ovcap>div:first-child{margin-bottom:6px}
+.mrow{display:grid;grid-template-columns:5.8em 1fr 8.8em;gap:8px;align-items:center;font:600 11.5px/1 ui-monospace,Menlo,monospace;margin-top:6px}.mrow>span:last-child{text-align:right;white-space:nowrap}.mrow>span:first-child{color:#d0d0d5;text-align:left}
+.mrow .ok{color:#30d158}.mrow .no{color:#ff453a}
+@media(max-width:760px){.rules li{grid-template-columns:5.6em 1fr 8.4em;gap:6px;font-size:11px}.ovcap{min-width:0;width:92%}.ovcap .mrow{display:none}.rules li{font-size:10px;grid-template-columns:6.3em 1fr 8.9em;gap:6px}}
 </style>
 </head>
 <body>
@@ -232,24 +242,27 @@ function inside(e,x,y){if(e.k!=="media")return x>=e.x&&x<e.x+e.w&&y>=e.y&&y<e.y+
 function measure(els,st=.5){let sw=0,sx=0,sy=0;const rows=Array(20).fill(0);for(let y=st/2;y<100;y+=st)for(let x=st/2;x<100;x+=st)for(const e of els)if(inside(e,x,y)){sw+=e.b;sx+=e.b*x;sy+=e.b*y;rows[Math.floor(y/5)]+=e.b}
 const top=Math.min(...els.map(e=>e.y)),bot=100-Math.max(...els.map(e=>e.y+e.h));
 const pic=els.filter(e=>e.k==="media").sort((a,b)=>b.h-a.h)[0],mx=Math.max(...rows)||1;return{cx:sx/sw,cy:sy/sw,top,bot,maxb:100-bot,pic,rows:rows.map(r=>r/mx),tilt:Math.abs(top-bot),dom:pic.h,cut:Math.max(0,-bot)}}
-function rulesOf(m){const dx=m.cx-50,dy=m.cy-50;return[["centre-x",Math.abs(dx).toFixed(0)+"% off",Math.abs(dx)<=10],["centre-y",Math.abs(dy).toFixed(0)+"% "+(dy<0?"too high":"too low"),Math.abs(dy)<=20],["whitespace",m.tilt.toFixed(0)+"% uneven",m.tilt<=12],["dominance","picture "+m.dom.toFixed(0)+"%",m.dom<=45],["fold-cut",m.cut.toFixed(0)+"% cut",m.cut===0]]}
+function rulesOf(m){const dx=m.cx-50,dy=m.cy-50,f=v=>Math.abs(v).toFixed(0)+"%";return[["centre-x",f(dx)+" off",Math.abs(dx)<=10,Math.abs(dx),10,dx<0?"→":"←"],["centre-y",f(dy)+(dy<0?" too high":" too low"),Math.abs(dy)<=20,Math.abs(dy),20,dy<0?"↓":"↑"],["whitespace",f(m.tilt)+" uneven",m.tilt<=12,m.tilt,12,m.top<m.bot?"↓":"↑"],["dominance","picture "+f(m.dom),m.dom<=45,m.dom,45,"↕"],["fold-cut",f(m.cut)+" cut",m.cut===0,m.cut,0,"↑"]]}
+function bar(r){const val=r[3],lim=r[4],full=lim>0?lim*2:20,v=Math.min(val,full),aw=lim/full*100,uw=Math.min(v,lim)/full*100,ew=v>lim?(v-lim)/full*100:0;return`<span class="bar"><i class="al" style="width:${aw}%"></i><i class="us" style="width:${uw}%"></i><i class="ex" style="left:${aw}%;width:${ew}%"></i><i class="tk" style="left:${aw}%"></i></span>`}
+function meter(r){return`<span>${r[0]}</span>${bar(r)}<span class="${r[2]?"ok":"no"}">${r[2]?"✓":r[5]} ${r[3].toFixed(0)}% · max ${r[4]}%</span>`}
 const GRP={"centre-x":"weight","centre-y":"weight",whitespace:"space",dominance:"fit","fold-cut":"fit"};
-function rows(R){return R.map(r=>`<li><span><em>${GRP[r[0]]}</em>${r[0]}</span><span class="${r[2]?"ok":"no"}">${r[2]?"✓":"✗"} ${r[1]}</span></li>`).join("")}
+function rows(R){return R.map(r=>`<li>${meter(r)}</li>`).join("")}
 function chips(R){const ok=g=>R.filter(r=>GRP[r[0]]===g).every(r=>r[2]);return["weight","space","fit"].map(g=>`<b class="chip ${ok(g)?"p":"f"}">${g} ${ok(g)?"✓":"✗"}</b>`).join("")+"<div>"+(R.every(r=>r[2])?"PASS · exit code 0":"FAIL · exit code 1")+"</div>"}
 let OVN=0;
+function rl(x,y,ux,uy,val,lim){const V='vector-effect="non-scaling-stroke"',P=(a,b)=>[x+ux*a,y+uy*a,x+ux*b,y+uy*b],ln=(a,b,c,w)=>b-a<=.001?"":`<line x1="${P(a,b)[0]}" y1="${P(a,b)[1]}" x2="${P(a,b)[2]}" y2="${P(a,b)[3]}" stroke="${c}" stroke-width="${w}" ${V}/>`,tk=ux?`<line x1="${x+ux*lim}" x2="${x+ux*lim}" y1="${y-3}" y2="${y+3}" stroke="#fff" stroke-width="2.5" ${V}/>`:`<line y1="${y+uy*lim}" y2="${y+uy*lim}" x1="${x-2}" x2="${x+2}" stroke="#fff" stroke-width="2.5" ${V}/>`;return ln(0,lim,"rgba(41,151,255,.45)",8)+ln(0,Math.min(val,lim),"#30d158",8)+ln(lim,val,"#ff453a",8)+tk}
 function drawOv(scr,m,R,listId,pg){scr.querySelectorAll(".ov,.ovl").forEach(n=>n.remove());const ok=n=>R.find(r=>r[0]===n)[2],col=o=>o?"#30d158":"#ff453a",p0=m.pic,top=Math.max(0,m.top),mb=Math.min(100,m.maxb),lim=p0.y+45,dEnd=Math.min(100,p0.y+p0.h),cOk=ok("centre-x")&&ok("centre-y"),wOk=ok("whitespace"),dOk=ok("dominance"),fOk=ok("fold-cut"),V='vector-effect="non-scaling-stroke"';
-const dx=m.cx-50,dy=m.cy-50,px=v=>Math.max(4,Math.min(96,v));
+const dx=m.cx-50,dy=m.cy-50,gt=Math.max(0,m.top),gb=Math.max(0,m.bot),px=v=>Math.max(4,Math.min(96,v));
 scr.insertAdjacentHTML("beforeend",`<svg aria-hidden="true" class="ov" viewBox="0 0 100 100" preserveAspectRatio="none"><defs><pattern id="h${++OVN}" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="3" stroke="#ff453a" stroke-width="1.4"/></pattern></defs>
-<g class="g-centre"><ellipse cx="50" cy="50" rx="10" ry="20" fill="rgba(41,151,255,.12)" stroke="#2997ff" stroke-width="2" stroke-dasharray="5 4" ${V}/><line x1="${m.cx}" y1="${m.cy}" x2="50" y2="50" stroke="${col(cOk)}" stroke-width="2.5" stroke-dasharray="5 4" ${V}/></g>
-<g class="g-tilt"><line x1="0" x2="100" y1="${top}" y2="${top}" stroke="#fff" stroke-opacity=".5" stroke-dasharray="3 4" ${V}/><line x1="0" x2="100" y1="${mb}" y2="${mb}" stroke="#fff" stroke-opacity=".5" stroke-dasharray="3 4" ${V}/><line x1="4" x2="4" y1="0" y2="${top}" stroke="${col(wOk)}" stroke-width="6" ${V}/><line x1="4" x2="4" y1="${mb}" y2="100" stroke="${col(wOk)}" stroke-width="6" ${V}/></g>
+<g class="g-centre">${rl(50,50,Math.sign(dx)||1,0,Math.abs(dx),10)}${rl(m.cx,50,0,Math.sign(dy)||1,Math.abs(dy),20)}</g>
+<g class="g-tilt"><line x1="0" x2="100" y1="${top}" y2="${top}" stroke="#fff" stroke-opacity=".5" stroke-dasharray="3 4" ${V}/><line x1="0" x2="100" y1="${mb}" y2="${mb}" stroke="#fff" stroke-opacity=".5" stroke-dasharray="3 4" ${V}/><line x1="4" x2="4" y1="0" y2="${top}" stroke="#fff" stroke-opacity=".7" stroke-width="8" ${V}/><line x1="4" x2="4" y1="${mb}" y2="100" stroke="#fff" stroke-opacity=".7" stroke-width="8" ${V}/>${gt<gb?`<line x1="4" x2="4" y1="${gt}" y2="${gb}" stroke="${col(wOk)}" stroke-width="8" stroke-dasharray="4 3" ${V}/>`:`<line x1="4" x2="4" y1="${100-gb}" y2="${100-gt}" stroke="${col(wOk)}" stroke-width="8" stroke-dasharray="4 3" ${V}/>`}</g>
 <g class="g-dom"><rect x="${p0.x}" y="${p0.y}" width="${p0.w}" height="${dEnd-p0.y}" fill="none" stroke="#fff" stroke-opacity=".6" ${V}/><line x1="96" x2="96" y1="${p0.y}" y2="${Math.min(lim,dEnd)}" stroke="#2997ff" stroke-width="6" ${V}/><line x1="96" x2="96" y1="${Math.min(lim,dEnd)}" y2="${dEnd}" stroke="#ff453a" stroke-width="6" ${V}/><line x1="0" x2="100" y1="${lim}" y2="${lim}" stroke="#2997ff" stroke-width="2" stroke-dasharray="6 4" ${V}/></g>
 <g class="g-fold">${m.cut>0?`<rect x="0" y="93" width="100" height="7" fill="url(#h${OVN})"/><line x1="0" x2="100" y1="93" y2="93" stroke="#ff453a" stroke-width="2" ${V}/>`:`<line x1="0" x2="100" y1="99.6" y2="99.6" stroke="#30d158" stroke-width="2" ${V}/>`}</g></svg>
 <div class="ovl" aria-hidden="true"><b class="ovcap"></b>
 <i class="pl g-tilt ${wOk?"p":"f"}" style="left:7%;top:${top/2}%">top ${m.top.toFixed(0)}%</i><i class="pl g-tilt ${wOk?"p":"f"}" style="left:7%;top:${px((mb+100)/2)}%">bottom ${Math.max(0,m.bot).toFixed(0)}%</i>
 <i class="pl g-dom ${dOk?"p":"f"}" style="right:8%;top:${px(p0.y+p0.h/2)}%">picture ${p0.h.toFixed(0)}%</i><i class="pl g-dom b" style="left:2%;top:${px(lim)}%">limit 45%</i>
-<i class="pl g-centre ${cOk?"p":"f"}" style="left:${m.cx}%;top:${m.cy}%;margin-top:18px">weight</i><i class="pl g-centre b" style="left:50%;top:${50-20}%;margin-top:-26px">allowed</i></div>`);
+<i class="pl g-centre ${cOk?"p":"f"}" style="left:${m.cx}%;top:${m.cy}%;margin-top:18px">weight point</i></div>`);
 const A={centre:cOk?"✓ Weight is inside the blue oval":Math.abs(dy)/20>Math.abs(dx)/10?(dy<0?"↓ Too high. Move content down.":"↑ Too low. Move content up."):(dx<0?"→ Too far left. Move content right.":"← Too far right. Move content left."),
-tilt:wOk?"✓ Top and bottom gaps are equal":"Top "+m.top.toFixed(0)+"%, bottom "+m.bot.toFixed(0)+"%. "+(m.top<m.bot?"↓ Move down.":"↑ Move up."),
+tilt:wOk?"✓ Top and bottom gaps are equal":"Top gap "+gt.toFixed(0)+"%, bottom gap "+gb.toFixed(0)+"%. "+(m.top<m.bot?"↓ Move down.":"↑ Move up."),
 dom:dOk?"✓ Picture is under the limit":"Picture is "+p0.h.toFixed(0)+"% tall. Limit is 45%. Make it shorter.",
 fold:fOk?"✓ Nothing is cut at the bottom":"↑ "+m.cut.toFixed(0)+"% is cut off the bottom. Move up or shrink."};
 const OK={centre:cOk,tilt:wOk,dom:dOk,fold:fOk};
@@ -259,7 +272,7 @@ const MAP={"centre-x":"centre","centre-y":"centre",whitespace:"tilt",dominance:"
 function showOv(scr,force){const o=scr._ov;if(!o)return;const pg=scr.id==="pgs",st=pg?9:step;
 let k=force||"";if(!k&&st>=3)k=st===3?"centre":(scr.dataset.sel||Object.keys(o.OK).find(x=>!o.OK[x])||"centre");
 scr.dataset.f=k;scr.querySelectorAll(".ov g,.ovl .pl").forEach(n=>n.classList.toggle("on",!!k&&n.classList.contains("g-"+k)));
-const c=scr.querySelector(".ovcap");c.textContent=k?o.A[k]:"";c.className="ovcap"+(k?" on "+(o.OK[k]?"p":"f"):"");
+const c=scr.querySelector(".ovcap");c.innerHTML=k?"<div>"+o.A[k]+"</div>"+({centre:[0,1],tilt:[2],dom:[3],fold:[4]}[k]).map(i=>`<div class="mrow">${meter(o.R[i])}</div>`).join(""):"";c.className="ovcap"+(k?" on "+(o.OK[k]?"p":"f"):"");
 document.querySelectorAll("#"+o.listId+" li").forEach((li,i)=>li.classList.toggle("sel",!!k&&MAP[o.R[i][0]]===k))}
 function build(){screen.querySelectorAll(".el").forEach(n=>n.remove());const els=SC[cur];
 els.forEach(e=>{const d=document.createElement("div");d.className="el "+e.k+(e.y+e.h>100?" cut":"");
