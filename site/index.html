@@ -279,7 +279,11 @@ FAIL 1280x720  page
 
 <section>
   <h2>Let your AI agent fix it.</h2>
-  <p class="lead">Install the skill once. After every UI change the agent measures, fixes each failure from the numbers, and measures again until the exit code is 0.</p>
+  <p class="lead">Install the skill once. The agent writes the page balanced, measures once, applies the exact fixes, and confirms with exit code 0.</p>
+  <pre>npx github:IFAKA/layout-balance URL --plan
+1. [dominance] img.hero: at most 307px tall
+   css: max-height: 42.6svh; object-fit: contain
+plan check: pass</pre>
   <pre>mkdir -p ~/.claude/skills/layout-balance &amp;&amp; curl -fsSL https://raw.githubusercontent.com/IFAKA/layout-balance/master/skills/layout-balance/SKILL.md -o ~/.claude/skills/layout-balance/SKILL.md</pre>
 </section>
 
