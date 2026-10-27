@@ -13,7 +13,7 @@ export function evaluate({ data, weight, fit }, rules) {
   for (const l of text) {
     if (l.x < rules.minEdge || l.x + l.w > W - rules.minEdge) add("edge-touch", `text "${l.tag}" is closer than ${rules.minEdge}px to a side edge`, Math.min(l.x, W - l.x - l.w), rules.minEdge);
   }
-  const sorted = [...content].filter((l) => l.kind !== "box").sort((a, b) => a.y - b.y);
+  const sorted = [...content].filter((l) => l.kind !== "box" && l.kind !== "panel").sort((a, b) => a.y - b.y);
   for (let i = 0; i < sorted.length; i++) for (let j = i + 1; j < sorted.length; j++) {
     const a = sorted[i], b = sorted[j];
     const overlapX = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) > 0;
@@ -31,7 +31,7 @@ export function evaluate({ data, weight, fit }, rules) {
   if (bottomSpace < rules.minTopClearance * H && bottom <= H + 1) add("bottom-clearance", `content ends ${Math.round(bottomSpace)}px from the bottom`, bottomSpace / H, rules.minTopClearance);
   const tilt = (topSpace - bottomSpace) / space;
   if (Math.abs(tilt) > rules.whitespaceTilt) add("whitespace-tilt", `empty space is uneven: ${Math.round(topSpace)}px above, ${Math.round(bottomSpace)}px below`, tilt, rules.whitespaceTilt);
-  const big = content.filter((l) => l.kind !== "text").map((l) => l.h / space).sort((a, b) => b - a)[0] || 0;
+  const big = content.filter((l) => l.kind !== "text" && l.kind !== "panel").map((l) => l.h / space).sort((a, b) => b - a)[0] || 0;
   if (big > rules.dominance) add("dominance", `one picture takes ${Math.round(big * 100)}% of the screen`, big, rules.dominance);
   if (weight && !weight.empty) {
     if (Math.abs(weight.dx) > rules.centerX) add("centre-x", `weight sits ${Math.round(Math.abs(weight.dx) * 100)}% to the ${weight.dx < 0 ? "left" : "right"}`, weight.dx, rules.centerX);

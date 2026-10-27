@@ -39,6 +39,11 @@ export function collect() {
     const tag = el.tagName;
     if (["IMG", "CANVAS", "VIDEO", "PICTURE"].includes(tag) || (tag === "SVG" || tag === "svg") && !el.closest("svg:not(:scope)")) {
       push("media", el.getBoundingClientRect(), el);
+    } else if (el.children.length && !textNodes.length) {
+      const cs = getComputedStyle(el), r = el.getBoundingClientRect();
+      const alpha = (cs.backgroundColor.match(/rgba?\(([^)]+)\)/)?.[1].split(",")[3] ?? "1").trim();
+      const painted = (cs.backgroundColor !== "rgba(0, 0, 0, 0)" && parseFloat(alpha) > 0.05) || parseFloat(cs.borderTopWidth) > 0;
+      if (painted && r.width >= 48 && r.height >= 48 && r.height < H * 0.95 && r.width < W * 0.99) push("panel", r, el); // cards and boxes: the eye sees them even when empty
     } else if (!el.children.length && !textNodes.length) {
       const cs = getComputedStyle(el), r = el.getBoundingClientRect();
       const painted = cs.backgroundImage !== "none" || (cs.backgroundColor !== "rgba(0, 0, 0, 0)" && cs.backgroundColor !== "transparent") || parseFloat(cs.borderTopWidth) > 0;
