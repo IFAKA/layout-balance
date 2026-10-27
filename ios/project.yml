@@ -1,0 +1,19 @@
+name: LBRunner
+options: { bundleIdPrefix: dev.layoutbalance, deploymentTarget: { iOS: "16.0" } }
+settings: { base: { SWIFT_VERSION: "5.0", CODE_SIGNING_ALLOWED: "NO", GENERATE_INFOPLIST_FILE: "YES" } }
+targets:
+  LBHost:
+    type: application
+    platform: iOS
+    sources: [Host]
+    settings: { base: { PRODUCT_BUNDLE_IDENTIFIER: dev.layoutbalance.host } }
+  LBRunner:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [Runner]
+    dependencies: [{ target: LBHost }]
+    settings: { base: { PRODUCT_BUNDLE_IDENTIFIER: dev.layoutbalance.runner, TEST_TARGET_NAME: LBHost } }
+schemes:
+  LBRunner:
+    build: { targets: { LBHost: all, LBRunner: [test] } }
+    test: { targets: [LBRunner] }

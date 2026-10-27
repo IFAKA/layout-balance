@@ -166,7 +166,7 @@ footer{color:var(--mute);font-size:13px;margin-top:48px}
 <section id="use">
   <h2>One command.</h2>
   <div class="use">
-    <div class="seg" id="useSeg"><button data-v="web" class="on">Web</button><button data-v="android">Android</button><button data-v="agent">AI agent</button></div>
+    <div class="seg" id="useSeg"><button data-v="web" class="on">Web</button><button data-v="android">Android</button><button data-v="ios">iOS</button><button data-v="agent">AI agent</button></div>
     <div class="code card" data-p="web"><pre>npx github:IFAKA/layout-balance http://localhost:3000
 
 <s>FAIL</s> 1280x720  page
@@ -176,6 +176,9 @@ exit code 1</pre><button>Copy</button></div>
     <div class="code card" data-p="android" hidden><pre>npx github:IFAKA/layout-balance android screens.json --out report
 
 Any phone over adb. Reads the screen tree, no app changes.</pre><button>Copy</button></div>
+    <div class="code card" data-p="ios" hidden><pre>npx github:IFAKA/layout-balance ios screens.json --out report
+
+iOS Simulator, React Native too. Reads the screen tree with a small XCUITest runner. Needs Xcode. Check only for now.</pre><button>Copy</button></div>
     <div class="code card" data-p="agent" hidden><pre>mkdir -p ~/.claude/skills/layout-balance &amp;&amp; curl -fsSL https://raw.githubusercontent.com/IFAKA/layout-balance/master/skills/layout-balance/SKILL.md -o ~/.claude/skills/layout-balance/SKILL.md
 
 npx github:IFAKA/layout-balance URL --fix --write ./public

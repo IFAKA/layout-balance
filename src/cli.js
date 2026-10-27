@@ -4,13 +4,16 @@ import { check, loadConfig } from "./index.js";
 import { fix } from "./fix.js";
 import { describe, write } from "./source.js";
 import { checkAndroid } from "./android.js";
+import { checkIOS } from "./ios.js";
 
 const args = process.argv.slice(2);
 const android = args[0] === "android"; if (android) args.shift();
+const ios = args[0] === "ios"; if (ios) args.shift();
 const flag = (n) => { const i = args.indexOf(n); return i >= 0 ? args.splice(i, 2)[1] : null; };
 if (args.includes("-h") || args.includes("--help") || !args.length) {
   console.log(`layout-balance <url>
 layout-balance android <screens.json> [--serial id]  (phone over adb)
+layout-balance ios <screens.json> [--udid id]  (iOS Simulator, needs Xcode; React Native too)
    [--config file] [--out dir] [--viewport WxH] [--sections css] [--json] [--plan] [--fix [--write DIR]]
 --fix: try changes on the real page, measure again, and print the exact edits to your own CSS rules (file:line, old -> new) that pass on every screen.
 --write DIR: also make those edits in the CSS / HTML files under DIR (the folder the page is served from).
@@ -26,12 +29,14 @@ const config = loadConfig(flag("--config"));
 const vp = flag("--viewport"); if (vp) { const [w, h] = vp.split("x").map(Number); config.viewports = [{ name: vp, width: w, height: h }]; }
 const sec = flag("--sections"); if (sec) config.sections = sec;
 const out = flag("--out");
-const serial = flag("--serial");
-const results = android
+const serial = flag("--serial"), udid = flag("--udid");
+const results = ios
+  ? await checkIOS(JSON.parse(readFileSync(args[0], "utf8")), config, { udid, outDir: out })
+  : android
   ? await checkAndroid(JSON.parse(readFileSync(args[0], "utf8")), config, { serial, outDir: out })
   : await check(args[0], config, { outDir: out, withPlan });
 let fixed = null;
-if (doFix && !android && results.some((r) => r.findings.length)) { fixed = await fix(args[0], config); if (writeDir) fixed.written = write(fixed.edits, writeDir); }
+if (doFix && !android && !ios && results.some((r) => r.findings.length)) { fixed = await fix(args[0], config); if (writeDir) fixed.written = write(fixed.edits, writeDir); }
 const bad = results.filter((r) => r.findings.length);
 if (json) console.log(JSON.stringify(fixed ? { results, fix: fixed } : results, null, 2));
 else {

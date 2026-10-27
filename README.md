@@ -116,6 +116,15 @@ It reads the screen tree with `uiautomator dump` and the picture with `screencap
 
 React Native apps on Android work too: the tool reads the native screen, so a RN `Text` counts as text and a RN `Image` counts as a picture. Tested with a React Native release build on a real phone. iOS is not supported.
 
+## iOS (Simulator, React Native too)
+
+```sh
+npx github:IFAKA/layout-balance ios screens.json --out report
+# screens.json: [{ "name": "home", "bundle": "com.yourco.app", "start": "xcrun simctl openurl booted yourapp://home" }]
+```
+
+It reads the accessibility tree of the app in the iOS Simulator (a small XCUITest runner, built once by `xcodebuild`, no other install; needs Xcode) and the screenshot, then applies the same rules. A React Native `Text` counts as text and an `Image` as a picture. The first run builds the runner (about 20 s); after that the whole run takes a few seconds. Limits: check only, no `--fix` yet; the iOS status bar is not in the tree, so top clearance is measured from the top of the screen, or from a navigation bar if the app has one; real iPhones are not supported yet.
+
 ## Use it as a library
 
 ```js

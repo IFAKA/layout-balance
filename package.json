@@ -12,6 +12,7 @@
   },
   "files": [
     "src",
+    "ios",
     "balance.config.json",
     "README.md",
     "LICENSE"
