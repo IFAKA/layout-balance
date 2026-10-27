@@ -91,6 +91,11 @@ footer{color:var(--mute);font-size:13px;padding:40px 20px;text-align:center;bord
 .sl{display:block;font-size:13px;color:var(--mute);margin-bottom:12px}.sl input{display:block;width:100%;margin-top:6px;accent-color:#0071e3}
 #play .fold span{display:none}#play{padding-top:90px;padding-bottom:24px}#play .stage{width:min(100%,calc((100svh - 330px)*1.7778))}.sl{margin-bottom:8px}.sl input{margin-top:2px}
 @media(max-height:760px),(max-width:760px){#play .lead{display:none}#play .demo{margin-top:1svh!important}#play .rules li{padding:5px 0}}
+.ov{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.ov g{opacity:0;transition:opacity .4s}.ov g.hl,.s4 .ov g.fail,.pg.ov g.fail,.s3 .ov .centre,.s4 .ov .centre,.pg.ov .centre{opacity:1}
+.ov .fail{stroke:#ff453a;fill:#ff453a}.ov .pass{stroke:#30d158;fill:rgba(48,209,88,.7)}
+.ov .fail rect{fill-opacity:.55}.ov .fold rect{fill-opacity:1}.ov .lim{stroke:var(--blue)}.ov line{fill:none}.ov .pass .lim,.ov .pass .exc{stroke:#30d158}
+.rules li{cursor:default}.rules li:hover{background:rgba(255,255,255,.05)}
 </style>
 </head>
 <body>
@@ -209,7 +214,18 @@ const $=id=>document.getElementById(id),screen=$("screen");
 function inside(e,x,y){if(e.k!=="media")return x>=e.x&&x<e.x+e.w&&y>=e.y&&y<e.y+e.h;const cx=e.x+e.w/2,cy=e.y+e.h/2;return((x-cx)/(e.w/2))**2+((y-cy)/(e.h/2))**2<=1}
 function measure(els){let sw=0,sx=0,sy=0;for(let y=.25;y<100;y+=.5)for(let x=.25;x<100;x+=.5)for(const e of els)if(inside(e,x,y)){sw+=e.b;sx+=e.b*x;sy+=e.b*y}
 const top=Math.min(...els.map(e=>e.y)),bot=100-Math.max(...els.map(e=>e.y+e.h));
-return{cx:sx/sw,cy:sy/sw,tilt:Math.abs(top-bot),dom:Math.max(...els.filter(e=>e.k==="media").map(e=>e.h)),cut:Math.max(0,-bot)}}
+const pic=els.filter(e=>e.k==="media").sort((a,b)=>b.h-a.h)[0];return{cx:sx/sw,cy:sy/sw,top,bot,maxb:100-bot,pic,tilt:Math.abs(top-bot),dom:pic.h,cut:Math.max(0,-bot)}}
+
+let OVN=0;
+function drawOv(scr,m,R,listId,pg){scr.querySelectorAll(".ov").forEach(n=>n.remove());const id=++OVN,p=n=>R.find(r=>r[0]===n)[2],c=ok=>ok?"pass":"fail",top=Math.max(0,m.top),mb=Math.min(100,m.maxb),p0=m.pic;
+const dEnd=Math.min(100,p0.h),lim=Math.min(dEnd,45);
+scr.insertAdjacentHTML("beforeend",`<svg aria-hidden="true" class="ov${pg?" pg":""}" viewBox="0 0 100 100" preserveAspectRatio="none"><defs><pattern id="h${id}" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="3" stroke="#ff453a" stroke-width="1.4"/></pattern></defs>
+<g class="centre ${c(p("centre-x")&&p("centre-y"))}"><line x1="50" y1="50" x2="${m.cx}" y2="${m.cy}" stroke-width="2.5" stroke-dasharray="5 4" vector-effect="non-scaling-stroke"/></g>
+<g class="tilt ${c(p("whitespace"))}"><rect x="1.5" y="0" width="2" height="${top}"/><rect x="1.5" y="${mb}" width="2" height="${100-mb}"/></g>
+<g class="dom ${c(p("dominance"))}"><line class="lim" x1="96" x2="96" y1="0" y2="${lim}" stroke-width="5" vector-effect="non-scaling-stroke"/><line class="exc" x1="96" x2="96" y1="${lim}" y2="${dEnd}" stroke-width="5" vector-effect="non-scaling-stroke"/></g>
+<g class="fold ${c(p("fold-cut"))}">${m.cut>0?`<rect x="0" y="93" width="100" height="7" fill="url(#h${id})"/><line x1="0" x2="100" y1="93" y2="93" stroke-width="2" vector-effect="non-scaling-stroke"/>`:""}</g></svg>`);
+const MAP={"centre-x":"centre","centre-y":"centre",whitespace:"tilt",dominance:"dom","fold-cut":"fold"};
+document.querySelectorAll("#"+listId+" li").forEach((li,i)=>{const g=scr.querySelector(".ov ."+MAP[R[i][0]]);li.onmouseenter=()=>g.classList.add("hl");li.onmouseleave=()=>g.classList.remove("hl")})}
 function build(){screen.querySelectorAll(".el").forEach(n=>n.remove());const els=SC[cur];
 els.forEach(e=>{const d=document.createElement("div");d.className="el "+e.k+(e.y+e.h>100?" cut":"");
 d.style.cssText=`left:${e.x}%;top:${e.y}%;width:${e.w}%;height:${e.h}%;--b:${e.b}`;
@@ -219,7 +235,7 @@ window.R=[["centre-x",Math.abs(dx).toFixed(0)+"% off",Math.abs(dx)<=10],["centre
 ["whitespace",m.tilt.toFixed(0)+"% uneven",m.tilt<=12],["dominance","picture "+m.dom+"%",m.dom<=45],["fold-cut",m.cut.toFixed(0)+"% cut",m.cut===0]];
 window.M=m;
 $("rules").innerHTML=R.map(r=>`<li><span>${r[0]}</span><span class="${r[2]?"ok":"no"}">${r[2]?"✓":"✗"} ${r[1]}</span></li>`).join("");
-document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.s===cur));apply()}
+drawOv(screen,m,R,"rules");document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.s===cur));apply()}
 function apply(){screen.className="screen s"+step+(SC[cur].some(e=>e.y+e.h>100)?" cutscene":"");
 $("num").textContent="Step "+(step+1)+" of 5";$("rt").textContent=STEPS[step][0];$("rc").textContent=STEPS[step][1];
 const red=$("red");red.style.left=(step>=3?M.cx:50)+"%";red.style.top=(step>=3?M.cy:50)+"%";
@@ -241,7 +257,7 @@ els.forEach(e=>{const d=document.createElement("div");d.className="el "+e.k;d.st
 const m=measure(els),dx=m.cx-50,dy=m.cy-50,R=[["centre-x",Math.abs(dx).toFixed(0)+"% off",Math.abs(dx)<=10],["centre-y",Math.abs(dy).toFixed(0)+"% "+(dy<0?"too high":"too low"),Math.abs(dy)<=20],["whitespace",m.tilt.toFixed(0)+"% uneven",m.tilt<=12],["dominance","picture "+m.dom.toFixed(0)+"%",m.dom<=45],["fold-cut",m.cut.toFixed(0)+"% cut",m.cut===0]];
 g("pgr").style.left=m.cx+"%";g("pgr").style.top=m.cy+"%";
 g("pgrules").innerHTML=R.map(r=>`<li class="on"><span>${r[0]}</span><span class="${r[2]?"ok":"no"}">${r[2]?"✓":"✗"} ${r[1]}</span></li>`).join("");
-const f=R.some(r=>!r[2]);g("pgv").className="verdict on "+(f?"f":"p");g("pgv").textContent=f?"FAIL · exit code 1":"PASS · exit code 0"}
+const f=R.some(r=>!r[2]);drawOv(sc,m,R,"pgrules",1);g("pgv").className="verdict on "+(f?"f":"p");g("pgv").textContent=f?"FAIL · exit code 1":"PASS · exit code 0"}
 ["pgh","pgz","pgy"].forEach(i=>g(i).oninput=run);run()})();
 </script>
 </body>

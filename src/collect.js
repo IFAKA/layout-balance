@@ -38,7 +38,7 @@ export function collect() {
     }
     const tag = el.tagName;
     if (["IMG", "CANVAS", "VIDEO", "PICTURE"].includes(tag) || (tag === "SVG" || tag === "svg") && !el.closest("svg:not(:scope)")) {
-      push("media", el.getBoundingClientRect(), el);
+      if (!el.closest('[aria-hidden="true"]')) push("media", el.getBoundingClientRect(), el); // decorative overlays do not count
     } else if (el.children.length && !textNodes.length) {
       const cs = getComputedStyle(el), r = el.getBoundingClientRect();
       const alpha = (cs.backgroundColor.match(/rgba?\(([^)]+)\)/)?.[1].split(",")[3] ?? "1").trim();
