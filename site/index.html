@@ -31,7 +31,7 @@ h2{font-size:clamp(30px,5vw,52px);line-height:1.08;letter-spacing:-.035em;font-w
 pre{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;text-align:left;overflow-x:auto;font:14px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;margin:32px auto 0;max-width:720px;width:100%;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}
 .pair{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:40px}
 .pair figure{background:var(--card);border-radius:22px;padding:14px}
-.pair img{width:100%;border-radius:12px;display:block}
+.pair img{width:100%;height:auto;border-radius:12px;display:block}
 .pair figcaption{color:var(--mute);font-size:14px;margin-top:10px}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:40px;text-align:left}
 .card{background:var(--card);border-radius:22px;padding:22px}
@@ -41,6 +41,53 @@ p code{margin:0 2px}code{font:.9em ui-monospace,Menlo,monospace;color:#f5f5f7}
 footer{color:var(--mute);font-size:13px;padding:40px 20px;text-align:center;border-top:1px solid var(--line)}
 @media(max-width:700px){.pair,.grid{grid-template-columns:1fr}}
 .grid,.pair{width:100%}.card p{line-height:1.7}
+
+.how{height:560svh;position:relative}
+.stick{position:sticky;top:0;height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:64px 20px 24px;gap:2svh}
+.stick h2{font-size:clamp(26px,5svh,48px)}
+.demo{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:28px;align-items:center;width:100%;max-width:1040px;text-align:left}
+.stagecol{display:flex;justify-content:center}
+.stage{width:min(100%,calc((100svh - 230px)*1.7778 + 0px));background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.bar{display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:1px solid var(--line);font-size:11px;color:var(--mute)}
+.bar i{width:9px;height:9px;border-radius:50%;background:#3a3a3d}.bar span{margin-left:8px}
+.screen{position:relative;aspect-ratio:16/9;overflow:hidden;background:#000}
+.el{position:absolute;opacity:var(--b);transition:opacity .6s,background .6s,border-radius .6s,box-shadow .6s}
+.el.text{background:repeating-linear-gradient(to bottom,#f5f5f7 0 38%,transparent 38% 50%);border-radius:3px}
+.el.box{background:#0071e3;border-radius:999px;opacity:1}
+.el.media{border-radius:50%;background:radial-gradient(closest-side,#4aa3ff,#0a2a55 70%,transparent)}
+.el::after{content:attr(data-label);position:absolute;left:0;top:0;transform:translateY(-100%);font:10px/1 ui-monospace,Menlo,monospace;background:var(--blue);color:#000;padding:2px 4px;border-radius:3px;opacity:0;transition:opacity .4s}
+.el::before{content:"";position:absolute;inset:0;border:1.5px dashed var(--blue);opacity:0;transition:opacity .4s}
+.s1 .el::before,.s1 .el::after{opacity:1}
+.s1 .el.cut::before{border-color:#ff453a}.s1 .el.cut::after{background:#ff453a;transform:translateY(0)}
+.s2 .el,.s3 .el,.s4 .el{opacity:var(--b);background:#fff!important;border-radius:4px}
+.s2 .el.media,.s3 .el.media,.s4 .el.media{border-radius:50%}
+.s2 .el,.s3 .el,.s4 .el{box-shadow:0 0 18px rgba(255,255,255,calc(var(--b)*.5))}
+.s4 .el{opacity:calc(var(--b)*.45)}
+.cross{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;opacity:0;transition:opacity .4s,left .9s cubic-bezier(.3,1.4,.5,1),top .9s cubic-bezier(.3,1.4,.5,1)}
+.cross::before,.cross::after{content:"";position:absolute;background:currentColor}
+.cross::before{left:12px;top:0;width:2px;height:100%}.cross::after{top:12px;left:0;height:2px;width:100%}
+.cross.w{color:#fff}.cross.r{color:#ff453a}
+.s3 .cross,.s4 .cross{opacity:1}
+.fold{position:absolute;left:0;right:0;bottom:0;border-top:1.5px dashed #ff453a;opacity:0;transition:opacity .4s}
+.fold span{position:absolute;right:6px;bottom:3px;font-size:9px;color:#ff453a}
+.s1.cutscene .fold{opacity:1}
+.read{min-height:300px}
+.tabs{display:flex;gap:6px;margin-bottom:14px}
+.tabs button{background:var(--card);color:var(--mute);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+.tabs button.on{background:#f5f5f7;color:#000;border-color:#f5f5f7}
+.num{color:var(--blue);font-size:13px;font-weight:600}
+.read h3{font-size:clamp(20px,3.4svh,28px);letter-spacing:-.03em;margin-top:2px}
+.cap{color:var(--mute);font-size:15px;margin-top:6px;min-height:3.2em}
+.rules{list-style:none;padding:0;margin:10px 0 0;font:12.5px/1 ui-monospace,Menlo,monospace}
+.rules li{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-top:1px solid var(--line);opacity:0;transform:translateX(8px);transition:opacity .4s,transform .4s}
+.rules li.on{opacity:1;transform:none}
+.rules .ok{color:#30d158}.rules .no{color:#ff453a}
+.verdict{margin-top:10px;font:600 15px ui-monospace,Menlo,monospace;opacity:0;transition:opacity .4s;min-height:1.2em}
+.verdict.on{opacity:1}.verdict.f{color:#ff453a}.verdict.p{color:#30d158}
+.dots{display:flex;gap:8px}
+.dots button{width:28px;height:4px;border:0;border-radius:3px;background:#3a3a3d;cursor:pointer;padding:0}
+.dots button.on{background:#f5f5f7}
+@media(max-width:760px){.demo{grid-template-columns:1fr;gap:12px}.read{min-height:0}.cap{min-height:0}.rules li{padding:5px 0}.stage{width:100%}.cap{font-size:14px}}
 </style>
 </head>
 <body>
@@ -52,14 +99,33 @@ footer{color:var(--mute);font-size:13px;padding:40px 20px;text-align:center;bord
   <div class="cta"><a class="btn" href="#start">Try it</a><a href="https://github.com/IFAKA/layout-balance">Read the docs ›</a></div>
 </section>
 
-<section id="see">
-  <h2>See what it sees.</h2>
-  <p class="lead">White cross: the middle of the screen. Red cross: the centre of visual weight. The tool checks that they are close.</p>
-  <div class="pair">
-    <figure><img src="crowded.png" alt="Crowded screen: the red cross sits far above the white cross" width="1280" height="720"><figcaption>Fails: top-heavy, huge picture</figcaption></figure>
-    <figure><img src="balanced.png" alt="Balanced screen: both crosses are close together" width="1280" height="720"><figcaption>Passes: even space, picture in proportion</figcaption></figure>
+<div id="how" class="how">
+<div class="stick">
+  <h2>How it works.</h2>
+  <div class="demo">
+    <div class="stagecol">
+      <div class="stage" id="stage">
+        <div class="bar"><i></i><i></i><i></i><span>your page · 1280×720</span></div>
+        <div class="screen" id="screen">
+          <div class="mid"></div>
+          <div class="cross w" style="left:50%;top:50%"></div>
+          <div class="cross r" id="red" style="left:50%;top:50%"></div>
+          <div class="fold"><span>bottom of the screen</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="read">
+      <div class="tabs" id="tabs"><button data-s="crowded">Crowded page</button><button data-s="balanced">Balanced page</button></div>
+      <p class="num" id="num"></p>
+      <h3 id="rt"></h3>
+      <p class="cap" id="rc"></p>
+      <ul class="rules" id="rules"></ul>
+      <div class="verdict" id="verdict"></div>
+    </div>
   </div>
-</section>
+  <div class="dots" id="dots"></div>
+</div>
+</div>
 
 <section id="start">
   <h2>One command.</h2>
@@ -97,5 +163,42 @@ FAIL 1280x720  page
 </section>
 </main>
 <!--layout-balance · MIT · a deterministic layout linter for Playwright and Android-->
+<script>
+const SC={
+crowded:[{k:"text",n:"heading",x:15,y:4,w:70,h:22,b:1},{k:"text",n:"text",x:20,y:28,w:60,h:8,b:.8},{k:"media",n:"picture",x:30,y:57,w:40,h:70,b:.2}],
+balanced:[{k:"text",n:"heading",x:25,y:14,w:50,h:10,b:1},{k:"text",n:"text",x:32,y:27,w:36,h:5,b:.6},{k:"box",n:"button",x:43,y:34,w:14,h:6,b:.8},{k:"media",n:"picture",x:34,y:48,w:32,h:40,b:.5}]};
+const STEPS=[["Open the page","A real browser loads it at 1280×720 and waits until the animations stop."],
+["Read every box","The page tells us where each text, picture and button is. Exact numbers, no guessing."],
+["Weigh the pixels","One screenshot. Brighter pixels are heavier. The dark background weighs nothing."],
+["Find the balance point","Like a see-saw. White cross: the middle of the screen. Red cross: where the weight really is."],
+["Check each limit","Every number is compared with its limit. One failure and the command exits with code 1."]];
+let cur="crowded",step=0;
+const $=id=>document.getElementById(id),screen=$("screen");
+function inside(e,x,y){if(e.k!=="media")return x>=e.x&&x<e.x+e.w&&y>=e.y&&y<e.y+e.h;const cx=e.x+e.w/2,cy=e.y+e.h/2;return((x-cx)/(e.w/2))**2+((y-cy)/(e.h/2))**2<=1}
+function measure(els){let sw=0,sx=0,sy=0;for(let y=.25;y<100;y+=.5)for(let x=.25;x<100;x+=.5)for(const e of els)if(inside(e,x,y)){sw+=e.b;sx+=e.b*x;sy+=e.b*y}
+const top=Math.min(...els.map(e=>e.y)),bot=100-Math.max(...els.map(e=>e.y+e.h));
+return{cx:sx/sw,cy:sy/sw,tilt:Math.abs(top-bot),dom:Math.max(...els.filter(e=>e.k==="media").map(e=>e.h)),cut:Math.max(0,-bot)}}
+function build(){screen.querySelectorAll(".el").forEach(n=>n.remove());const els=SC[cur];
+els.forEach(e=>{const d=document.createElement("div");d.className="el "+e.k+(e.y+e.h>100?" cut":"");
+d.style.cssText=`left:${e.x}%;top:${e.y}%;width:${e.w}%;height:${e.h}%;--b:${e.b}`;
+d.dataset.label=e.n+" "+Math.round(e.w*12.8)+"×"+Math.round(e.h*7.2);screen.prepend(d)});
+const m=measure(els),dx=m.cx-50,dy=m.cy-50;
+window.R=[["centre-x",Math.abs(dx).toFixed(0)+"% off",Math.abs(dx)<=10],["centre-y",Math.abs(dy).toFixed(0)+"% "+(dy<0?"too high":"too low"),Math.abs(dy)<=20],
+["whitespace",m.tilt.toFixed(0)+"% uneven",m.tilt<=12],["dominance","picture "+m.dom+"%",m.dom<=45],["fold-cut",m.cut.toFixed(0)+"% cut",m.cut===0]];
+window.M=m;
+$("rules").innerHTML=R.map(r=>`<li><span>${r[0]}</span><span class="${r[2]?"ok":"no"}">${r[2]?"✓":"✗"} ${r[1]}</span></li>`).join("");
+document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.s===cur));apply()}
+function apply(){screen.className="screen s"+step+(SC[cur].some(e=>e.y+e.h>100)?" cutscene":"");
+$("num").textContent="Step "+(step+1)+" of 5";$("rt").textContent=STEPS[step][0];$("rc").textContent=STEPS[step][1];
+const red=$("red");red.style.left=(step>=3?M.cx:50)+"%";red.style.top=(step>=3?M.cy:50)+"%";
+[...$("rules").children].forEach((li,i)=>li.classList.toggle("on",step>=4||(step===3&&i<2)));
+const fail=R.some(r=>!r[2]),v=$("verdict");v.className="verdict"+(step>=4?" on "+(fail?"f":"p"):"");v.textContent=fail?"FAIL · exit code 1":"PASS · exit code 0";
+document.querySelectorAll("#dots button").forEach((b,i)=>b.classList.toggle("on",i===step))}
+const how=$("how");$("dots").innerHTML=STEPS.map((_,i)=>`<button aria-label="Step ${i+1}"></button>`).join("");
+document.querySelectorAll("#dots button").forEach((b,i)=>b.onclick=()=>scrollTo({top:how.offsetTop+(i+.5)/5*(how.offsetHeight-innerHeight),behavior:"smooth"}));
+document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{cur=b.dataset.s;build()});
+function onScroll(){const r=how.getBoundingClientRect(),p=Math.min(.999,Math.max(0,-r.top/(r.height-innerHeight))),n=Math.floor(p*5);if(n!==step){step=n;apply()}}
+addEventListener("scroll",onScroll,{passive:true});build();onScroll();
+</script>
 </body>
 </html>
