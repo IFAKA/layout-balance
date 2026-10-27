@@ -5,7 +5,7 @@
 **Measure the visual balance of any web page. Fail the build when it looks off.**<br>
 Deterministic. No AI. No screenshots to approve by hand.
 
-[Quick start](#quick-start) · [What it checks](#what-it-checks) · [Use it in CI](#use-it-in-ci) · [Configure](#configure) · [Use it with an AI coding agent](#use-it-with-an-ai-coding-agent)
+[Website](https://layout-balance.vercel.app) · [Quick start](#quick-start) · [What it checks](#what-it-checks) · [Use it in CI](#use-it-in-ci) · [Configure](#configure) · [Use it with an AI coding agent](#use-it-with-an-ai-coding-agent)
 
 </div>
 
@@ -121,6 +121,10 @@ Add one line to your `AGENTS.md` or `CLAUDE.md`: *after any page change, run `np
 ## Why it exists
 
 Visual balance is studied (weight maps, moment equilibrium, symmetry scores), and layout checkers exist for overflow and overlap. No tool combined both as a simple gate you can drop into any project. See [research notes](docs/RESEARCH.md).
+
+## Website
+
+https://layout-balance.vercel.app (source in `site/`). It passes its own checks at four window sizes.
 
 ## Develop
 

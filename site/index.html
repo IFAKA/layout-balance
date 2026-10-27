@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>layout-balance: measure the visual balance of any page</title>
+<meta name="description" content="A deterministic layout linter. Measures where the visual weight sits, the empty space, overflow and spacing of any web page or Android screen, and fails CI when it looks off. No AI.">
+<link rel="canonical" href="https://layout-balance.vercel.app/">
+<meta property="og:title" content="layout-balance: fail the build when a page looks off">
+<meta property="og:description" content="Deterministic visual balance checks for web pages and Android screens. Playwright, CI, no AI.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://layout-balance.vercel.app/">
+<meta property="og:image" content="https://layout-balance.vercel.app/crowded.png">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"layout-balance","applicationCategory":"DeveloperApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"license":"https://opensource.org/licenses/MIT","url":"https://layout-balance.vercel.app/","codeRepository":"https://github.com/IFAKA/layout-balance"}</script>
+<style>
+:root{--bg:#000;--card:#111113;--line:#2a2a2d;--mute:#a1a1a6;--blue:#2997ff}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:#f5f5f7;font:17px/1.5 Inter,-apple-system,"SF Pro Text",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+nav{position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;height:48px;padding:0 20px;background:rgba(0,0,0,.72);backdrop-filter:blur(20px);border-bottom:1px solid var(--line);font-size:15px}
+nav b{font-weight:600}
+a{color:var(--blue);text-decoration:none}
+.btn{background:#0071e3;color:#fff;border-radius:999px;padding:6px 14px;font-size:14px}
+section{max-width:1000px;margin:0 auto;padding:120px 20px 48px;text-align:center;min-height:100svh;display:flex;flex-direction:column;justify-content:center;align-items:center}
+h1{font-size:clamp(40px,8vw,84px);line-height:1.04;letter-spacing:-.04em;font-weight:600;text-wrap:balance}
+h2{font-size:clamp(30px,5vw,52px);line-height:1.08;letter-spacing:-.035em;font-weight:600;text-wrap:balance}
+.lead{color:var(--mute);font-size:clamp(18px,2.4vw,24px);margin:20px auto 0;max-width:640px}
+.cta{display:flex;gap:20px;justify-content:center;align-items:center;margin-top:32px;flex-wrap:wrap}
+.cta .btn{padding:12px 24px;font-size:17px}
+pre{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;text-align:left;overflow-x:auto;font:14px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;margin:32px auto 0;max-width:720px;width:100%;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:40px}
+.pair figure{background:var(--card);border-radius:22px;padding:14px}
+.pair img{width:100%;border-radius:12px;display:block}
+.pair figcaption{color:var(--mute);font-size:14px;margin-top:10px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:40px;text-align:left}
+.card{background:var(--card);border-radius:22px;padding:22px}
+.card h3{font-size:19px;letter-spacing:-.02em}
+.card p{color:var(--mute);font-size:15px;margin-top:8px}
+p code{margin:0 2px}code{font:.9em ui-monospace,Menlo,monospace;color:#f5f5f7}
+footer{color:var(--mute);font-size:13px;padding:40px 20px;text-align:center;border-top:1px solid var(--line)}
+@media(max-width:700px){.pair,.grid{grid-template-columns:1fr}}
+.grid,.pair{width:100%}.card p{line-height:1.7}
+</style>
+</head>
+<body>
+<nav><b>layout-balance</b><a class="btn" href="https://github.com/IFAKA/layout-balance">GitHub</a></nav>
+<main>
+<section>
+  <h1>Fail the build when a page looks off.</h1>
+  <p class="lead">Measures the visual balance of any web page or Android screen. Numbers, not opinions. No AI.</p>
+  <div class="cta"><a class="btn" href="#start">Try it</a><a href="https://github.com/IFAKA/layout-balance">Read the docs ›</a></div>
+</section>
+
+<section id="see">
+  <h2>See what it sees.</h2>
+  <p class="lead">White cross: the middle of the screen. Red cross: the centre of visual weight. The tool checks that they are close.</p>
+  <div class="pair">
+    <figure><img src="crowded.png" alt="Crowded screen: the red cross sits far above the white cross" width="1280" height="720"><figcaption>Fails: top-heavy, huge picture</figcaption></figure>
+    <figure><img src="balanced.png" alt="Balanced screen: both crosses are close together" width="1280" height="720"><figcaption>Passes: even space, picture in proportion</figcaption></figure>
+  </div>
+</section>
+
+<section id="start">
+  <h2>One command.</h2>
+  <p class="lead">Needs Node 20 and Chrome. Exit code 1 when any screen fails, so CI stops.</p>
+  <pre>npx github:IFAKA/layout-balance http://localhost:3000
+
+FAIL 1280x720  page
+  - dominance: one picture takes 75% of the screen (limit 0.45)
+  - top-clearance: content starts 2px under the top bar</pre>
+</section>
+
+<section>
+  <h2>What it checks.</h2>
+  <div class="grid">
+    <div class="card"><h3>Weight centre</h3><p>Is the visual weight too far left, right, high or low? <code>centre-x</code> <code>centre-y</code></p></div>
+    <div class="card"><h3>Whitespace</h3><p>Is the empty space above and below very uneven? <code>whitespace-tilt</code></p></div>
+    <div class="card"><h3>Dominance</h3><p>Is one picture taller than 45% of the screen? <code>dominance</code></p></div>
+    <div class="card"><h3>Cut off</h3><p>Is text cut by the fold or the side edge? <code>fold-cut</code> <code>edge-cut</code></p></div>
+    <div class="card"><h3>Spacing</h3><p>Are two blocks closer than 8 px? <code>min-gap</code> <code>edge-touch</code></p></div>
+    <div class="card"><h3>Overflow</h3><p>Does the page scroll sideways? <code>overflow-x</code></p></div>
+  </div>
+</section>
+
+<section>
+  <h2>Any screen with a tree.</h2>
+  <p class="lead">The web uses Playwright. Android uses <code>adb</code> and <code>uiautomator</code>. The same rules run on both.</p>
+  <pre>npx github:IFAKA/layout-balance android screens.json --out report</pre>
+</section>
+
+<section>
+  <h2>Same page, same result.</h2>
+  <p class="lead">It is arithmetic on box positions and one screenshot. It runs once and exits. It never changes your page. Open source, MIT.</p>
+  <div class="cta"><a class="btn" href="https://github.com/IFAKA/layout-balance">Get it on GitHub</a></div>
+<p style="color:var(--mute);font-size:13px;margin-top:48px">layout-balance · MIT · a deterministic layout linter for Playwright and Android</p>
+</section>
+</main>
+<!--layout-balance · MIT · a deterministic layout linter for Playwright and Android-->
+</body>
+</html>
