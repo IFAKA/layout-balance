@@ -1,0 +1,19 @@
+{
+  "viewports": [
+    { "name": "phone", "width": 390, "height": 800 },
+    { "name": "small-laptop", "width": 1024, "height": 640 },
+    { "name": "laptop", "width": 1280, "height": 720 },
+    { "name": "desktop", "width": 1440, "height": 900 }
+  ],
+  "sections": "section",
+  "settleMs": 700,
+  "rules": {
+    "centerX": 0.1,
+    "centerY": 0.2,
+    "whitespaceTilt": 0.12,
+    "dominance": 0.45,
+    "minGap": 8,
+    "minEdge": 12,
+    "minTopClearance": 0.04
+  }
+}

@@ -1,0 +1,6 @@
+FAIL 1280x720  page
+       - fold-cut: content runs past the bottom of the screen (limit 0)
+       - top-clearance: content starts 2px under the top bar (limit 0.04)
+       - dominance: one picture takes 75% of the screen (limit 0.45)
+
+1 of 1 screens fail

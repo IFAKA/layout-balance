@@ -1,0 +1,3 @@
+ok   1280x720  page
+
+all 1 screens balanced

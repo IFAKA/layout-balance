@@ -1,0 +1,18 @@
+{
+  "name": "layout-balance",
+  "version": "0.1.0",
+  "description": "Measure the visual balance of any web page and fail the build when it is off. Deterministic, no AI. Works with Playwright.",
+  "type": "module",
+  "bin": { "layout-balance": "./src/cli.js" },
+  "main": "./src/index.js",
+  "exports": { ".": "./src/index.js" },
+  "files": ["src", "balance.config.json", "README.md", "LICENSE"],
+  "scripts": { "test": "node --test test/*.test.js" },
+  "engines": { "node": ">=20" },
+  "keywords": ["visual-balance", "layout", "layout-testing", "ui-testing", "design-lint", "playwright", "web-design", "css", "frontend", "ci", "whitespace", "spacing", "aesthetics", "cli", "quality-gate"],
+  "repository": { "type": "git", "url": "git+https://github.com/IFAKA/layout-balance.git" },
+  "homepage": "https://github.com/IFAKA/layout-balance#readme",
+  "bugs": { "url": "https://github.com/IFAKA/layout-balance/issues" },
+  "license": "MIT",
+  "dependencies": { "playwright": "^1.50.0", "pngjs": "^7.0.0" }
+}
