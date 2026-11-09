@@ -14,6 +14,10 @@
     "dominance": 0.45,
     "minGap": 8,
     "minEdge": 12,
-    "minTopClearance": 0.04
+    "minTopClearance": 0.04,
+    "insetTolerance": 0.34,
+    "alignNear": 8,
+    "maxGap": 0.2,
+    "maxLineChars": 90
   }
 }
