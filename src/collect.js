@@ -127,7 +127,7 @@ export function collect() {
   }
   for (const b of boxes) {
     const c = b.content;
-    b.stretched = !!c && b.h > c.h + b.pad[0] + b.pad[2] + b.border[0] + b.border[2] + 4;
+    b.stretched = !!c && b.h > c.h + b.pad[0] + b.pad[2] + b.border[0] + b.border[2] + (b.pad[2] + b.border[2] > 0 ? b.lastMarginBottom : 0) + 4; // height from a row or a fixed height, not from the content
     delete b.el;
   }
   return { W, H, headerBottom, leaves, boxes, hscroll: document.documentElement.scrollWidth > innerWidth + 1 };

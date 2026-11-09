@@ -1,4 +1,7 @@
 import { evaluate } from "./index.js";
+import { boxIssues } from "./rules.js";
+
+const BOX_RULES = ["inset-y", "inset-x", "align", "rhythm", "max-gap", "sibling-mismatch", "line-length"];
 
 /** Pure: findings in, an ordered list of exact fixes out. Same input gives the same plan.
  *  Order matters: sizes first, then spacing, then one shift of the whole block.
@@ -70,7 +73,19 @@ export function plan({ data, weight, fit }, rules, findings) {
     add("centre-x", "the heaviest block (picture or dark card)", `weight is ${px(Math.abs(weight.dx * W))}px to the ${weight.dx < 0 ? "left" : "right"}: move content ${dx > 0 ? "right" : "left"} ${px(Math.abs(dx))}px, or add a block of the same weight on the other side`, "margin-inline: auto (centre the column)");
   }
 
+  // 6. boxes: the spaces inside them, how pieces line up, gaps, cards in a row, line length (each step is checked by the measure, not by this virtual copy)
+  const bn = (b) => b.css.split(" ").pop();
+  for (const i of boxIssues(data, rules, fit, H)) {
+    if (i.rule === "inset-y") add("inset-y", bn(i.box), i.B > i.T && i.box.lastMarginBottom > 0 ? `remove the margin under its last child (${i.box.lastMarginBottom}px): the space below is ${px(i.B)}px, above ${px(i.T)}px` : `make the padding above and below equal (${px(Math.max(i.T, i.B))}px)`, i.B > i.T && i.box.lastMarginBottom > 0 ? `${i.box.lastCss}: margin-bottom: 0` : "padding-top, padding-bottom: the same value");
+    else if (i.rule === "inset-x") add("inset-x", bn(i.box), `make the space left and right equal (${px(i.L)}px now on the left, ${px(i.R)}px on the right)`, `padding-left, padding-right: ${px(Math.max(i.L, i.R))}`);
+    else if (i.rule === "align") add("align", i.group.map((l) => l.tag).join(", "), "give stacked items the same left edge (or the same centre)", "margin-left: the difference, on the one that is off");
+    else if (i.rule === "rhythm") add("rhythm", bn({ css: i.parent }), "make the gaps between the blocks equal, or clearly different (8px and 24px)", "margin-top on the lower block: the same value");
+    else if (i.rule === "max-gap") add("max-gap", `${name(i.a)} and ${name(i.b)}`, `bring them closer: the gap is ${px(i.gap)}px, the limit is ${px(rules.maxGap * H)}px`, "margin-top on the lower block, or justify-content: center and gap on the parent");
+    else if (i.rule === "sibling-mismatch") add("sibling-mismatch", i.boxes.map(bn).join(", "), i.kind === "height" ? "make the boxes in this row the same height" : "give the boxes in this row the same padding", i.kind === "height" ? "align-items: stretch on the parent; no fixed height" : "padding: the same value on every box");
+    else if (i.rule === "line-length") add("line-length", name(i.leaf), `keep lines under ${rules.maxLineChars ?? 90} characters`, "max-width: 65ch");
+  }
+
   const after = evaluate({ data: { ...data, leaves: [...L, ...data.leaves.filter((l) => l.fixed)] }, weight: null, fit }, rules);
-  const left = after.map((f) => f.rule);
+  const left = after.map((f) => f.rule).filter((r) => !BOX_RULES.includes(r)); // the box steps are exact edits, not simulated
   return { steps, predicted: left.length ? "remaining: " + [...new Set(left)].join(", ") : "pass", weightIsEstimate: has("centre-x") || has("centre-y") };
 }

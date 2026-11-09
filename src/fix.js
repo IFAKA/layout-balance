@@ -1,3 +1,4 @@
+import { boxIssues } from "./rules.js";
 import { launch, getScreens, measureScreen, check, settle, NO_MOTION } from "./index.js";
 
 /** Find CSS that makes every screen pass, by trying it on the real page and measuring again.
@@ -184,6 +185,94 @@ async function lever(page, s, m, R, set, get) {
       }
     }
   }
+  // 3b. boxes: space inside them, edges that almost line up, uneven gaps, cards in a row, far-apart blocks, long lines
+  const issues = boxIssues(data, R, s.fit, H), px = (n) => `${Math.round(n * 10) / 10}px`, near = (a, b) => Math.abs(a - b) <= 1.5;
+  const mode = (vals, pick) => { // the value most pieces share (within 1.5px); on a tie `pick` chooses
+    let best = null;
+    for (const v of vals) { const n = vals.filter((o) => near(o, v)).length; if (!best || n > best.n || (n === best.n && pick(v, best.v))) best = { v, n }; }
+    return best.v;
+  };
+  const margins = (q) => page.evaluate((q) => { const c = getComputedStyle(document.querySelector(q)); return { l: parseFloat(c.marginLeft) || 0, t: parseFloat(c.marginTop) || 0, b: parseFloat(c.marginBottom) || 0 }; }, q);
+  // Make the gap between block a (above) and block b equal to `want` px: how much margin is needed is measured with both margins at 0.
+  const setGap = async (a, b, gap, want) => {
+    const r = await page.evaluate(([qa, qb]) => {
+      const A = document.querySelector(qa), B = document.querySelector(qb), ca = getComputedStyle(A), cb = getComputedStyle(B);
+      const mb = parseFloat(ca.marginBottom) || 0, mt = parseFloat(cb.marginTop) || 0, was = B.getBoundingClientRect().top - A.getBoundingClientRect().bottom;
+      const sa = A.getAttribute("style"), sb = B.getAttribute("style");
+      A.style.setProperty("margin-bottom", "0px", "important"); B.style.setProperty("margin-top", "0px", "important");
+      const base = B.getBoundingClientRect().top - A.getBoundingClientRect().bottom;
+      for (const [E, st] of [[A, sa], [B, sb]]) st === null ? E.removeAttribute("style") : E.setAttribute("style", st);
+      return { mb, mt, was, base };
+    }, [a, b]);
+    const M = Math.round(want - (gap - r.was) - r.base); // margin that is needed; the rest of the gap comes from padding, line height
+    if (M < 0 || r.base + (gap - r.was) > want + 0.5) return false;
+    if (r.mb > 0 && r.mt === 0) go(a, "margin-bottom", px(M));
+    else { if (r.mb > 0) go(a, "margin-bottom", "0px"); go(b, "margin-top", px(M)); }
+    return true;
+  };
+  for (const i of issues) {
+    if (i.rule === "inset-y") {
+      const b = i.box;
+      if (i.B > i.T && b.lastMarginBottom > 0 && b.lastCss) go(b.lastCss, "margin-bottom", "0px"); // the last child's margin made the bottom bigger
+      else if (i.B > i.T) go(b.css, "padding-top", px(b.pad[0] + i.B - i.T));
+      else go(b.css, "padding-bottom", px(b.pad[2] + i.T - i.B));
+    } else if (i.rule === "inset-x") {
+      const b = i.box, pl = b.pad[3], pr = b.pad[1];
+      if (Math.abs(pl - pr) > 0.5) { go(b.css, pl < pr ? "padding-left" : "padding-right", px(Math.max(pl, pr))); }
+      else if (b.centred) { // equal padding but the content still sits off to one side: centre it
+        if (!/flex|grid/.test(b.display)) go(b.css, "display", "flex");
+        go(b.css, "justify-content", "center"); go(b.css, "align-items", "center");
+      } else go(b.css, i.L < i.R ? "padding-left" : "padding-right", px(Math.max(i.L, i.R) - (i.L < i.R ? b.border[3] : b.border[1])));
+    }
+  }
+  if (changed) return true;
+  for (const i of issues.filter((i) => i.rule === "align")) {
+    const val = (l) => (i.centre ? l.x + l.w / 2 : l.x);
+    for (const l of i.group) {
+      const ref = i.group.filter((o) => Math.min(o.x + o.w, l.x + l.w) - Math.max(o.x, l.x) > 1 && (o.y + o.h <= l.y + 2 || l.y + l.h <= o.y + 2));
+      if (!ref.length) continue;
+      const target = mode([val(l), ...ref.map(val)], (v, b) => v < b), d = target - val(l);
+      if (Math.abs(d) <= 1.5 || Math.abs(d) > (R.alignNear ?? 8) || ref.some((o) => near(o.x, l.x) || near(o.x + o.w / 2, l.x + l.w / 2))) continue;
+      go(l.css, "margin-left", px((await margins(l.css)).l + d * (i.centre ? 2 : 1)));
+    }
+  }
+  if (changed) return true;
+  for (const i of issues.filter((i) => i.rule === "rhythm")) {
+    const target = mode(i.gaps.map((g) => g.gap), (v, b) => v < b);
+    for (const g of i.gaps) if (Math.abs(g.gap - target) > 1.5 && Math.abs(g.gap - target) <= 0.25 * Math.max(g.gap, target)) await setGap(g.a.css, g.b.css, g.gap, target);
+    if (!changed) { // a gap that margins cannot shrink (the line box of an inline button): grow the smaller gaps up to it instead
+      const big = Math.max(...i.gaps.map((g) => g.gap));
+      for (const g of i.gaps) if (big - g.gap > 1.5 && big - g.gap <= 0.25 * big) await setGap(g.a.css, g.b.css, g.gap, big);
+    }
+  }
+  if (changed) return true;
+  for (const i of issues.filter((i) => i.rule === "max-gap")) {
+    const want = Math.floor(R.maxGap * H * 0.8);
+    if (!(await setGap(i.a.css, i.b.css, i.gap, want)) || !changed) { // the space does not come from margins: it comes from the parent (space-between, grow)
+      const small = [...i.groupGaps].sort((x, y) => x - y), mid = small.length ? small[Math.floor(small.length / 2)] : 24;
+      go(i.b.parent, "justify-content", "center"); go(i.b.parent, "gap", px(Math.max(R.minGap * 2, Math.round(mid))));
+    }
+  }
+  if (changed) return true;
+  for (const i of issues.filter((i) => i.rule === "sibling-mismatch")) {
+    if (i.kind === "pad") {
+      for (const side of i.sides) {
+        const name = ["padding-top", "padding-right", "padding-bottom", "padding-left"][side], vals = i.boxes.map((b) => b.pad[side]);
+        const want = mode(vals, (v, b) => v > b);
+        for (const b of i.boxes) if (Math.abs(b.pad[side] - want) > 0.5) go(b.css, name, px(want));
+      }
+    } else {
+      const parent = i.boxes[0].parent, top = Math.max(...i.boxes.map((b) => b.h));
+      if (get(parent, "align-items") !== "stretch") go(parent, "align-items", "stretch");
+      else for (const b of i.boxes) { go(b.css, "height", "auto"); go(b.css, "min-height", px(top)); }
+    }
+  }
+  if (changed) return true;
+  for (const i of issues.filter((i) => i.rule === "line-length")) {
+    go(i.leaf.css, "max-width", "65ch");
+    if (i.leaf.align === "center") go(i.leaf.css, "margin-inline", "auto");
+  }
+  if (changed) return true;
   // 4. too tall: shrink the tallest picture, then the section padding
   const top = Math.min(...content.map((l) => l.y)), bottom = Math.max(...content.map((l) => l.y + l.h));
   const over = bottom - (H - Math.ceil(R.minTopClearance * H) - 1);

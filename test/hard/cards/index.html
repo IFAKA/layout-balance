@@ -1,0 +1,15 @@
+<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+*{box-sizing:border-box}body{margin:0;background:#101018;color:#eee;font-family:system-ui,sans-serif}
+section{height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 20px}
+h1{font-size:36px;margin:0 0 28px;text-align:center}
+.row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:start;width:min(100%,900px)}
+.card{background:#1c1c2a;border-radius:12px;padding:20px}
+.card:nth-child(2){padding:28px 24px}.card:nth-child(3){padding:24px}
+.card h2{font-size:20px;margin:0 0 8px}.card p{font-size:15px;line-height:1.5;margin:0}
+@media(max-width:700px){.row{grid-template-columns:1fr}}
+</style></head><body>
+<section id="s"><h1>Plans</h1><div class="row">
+<div class="card"><h2>Free</h2><p>One project.</p></div>
+<div class="card"><h2>Pro</h2><p>Unlimited projects, priority support, a custom domain and daily backups for your team.</p></div>
+<div class="card"><h2>Team</h2><p>Everything in Pro plus seats for ten people.</p></div></div></section>
+</body></html>
