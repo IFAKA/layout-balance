@@ -13,6 +13,9 @@ Goal: no loop. Write it balanced (part 1). In a new or changed page, measure onc
 - Any picture, video or big shape: `max-height:45svh` (the limit is 45% of the screen), `object-fit:contain`.
 - Side padding at least 16px: `padding-inline:max(16px,4vw)`. Text never closer than 12px to a side edge.
 - At least 8px between stacked blocks. Under a fixed top bar, add its height plus 4% of the screen as top padding.
+- Inside a box (button, card): equal padding left and right, and above and below. No `margin-bottom` on the last child of a padded card.
+- Stacked items share one left edge (or one centre). Gaps between stacked blocks are equal, or clearly different (8 and 24, never 16 and 19).
+- Cards in a row: same height (`align-items:stretch`) and same padding. No gap between blocks over 20% of the screen. Text lines at most ~65ch (`max-width:65ch`).
 - Weight: do not put the heavy block (big picture, dark card, bright button) on one side only. Centre it, or balance it with a block on the other side. Keep the heavy block near the vertical middle.
 - Type and space in `clamp()` and `svh`, so one rule fits phone (390x800) and desktop (1440x900).
 - Never `width:100vw` with padding; `max-width:100%` and `overflow-wrap:anywhere` on long text.

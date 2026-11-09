@@ -46,7 +46,7 @@ Think of the screen as a see-saw. Every block is a child sitting on it. A big br
 2. It scrolls to each `<section>` (or checks the whole page) and waits for animations to settle.
 3. It reads the position of every text, image, canvas and shape from the page, and takes one screenshot.
 4. **Weight** comes from the screenshot: each pixel counts by how far its brightness is from the background. The centre of all that weight is compared with the middle of the screen.
-5. **Space** comes from the page's own boxes: gaps, margins, and what is cut by the edges.
+5. **Space** comes from the page's own boxes: gaps, margins, and what is cut by the edges. Each piece also keeps the box it sits in (card, button, panel), so the space inside a box, cards in a row and stacked edges can be checked too.
 6. Each number is compared with a limit. Same page, same result, every run.
 
 Screens that are taller than the window (long scrolling sections) are only checked for sideways scroll, edge cuts and tight gaps. Screens that are meant to fit one window (a hero, a pinned scene) get the full balance checks.
@@ -64,6 +64,12 @@ Screens that are taller than the window (long scrolling sections) are only check
 | `edge-cut` / `edge-touch` | Something runs past the side edge, or text is under 12 px from it | 0 / 12 px |
 | `overflow-x` | The page scrolls sideways | never |
 | `min-gap` | Two stacked blocks are less than 8 px apart | 8 px |
+| `inset-y` / `inset-x` | Space inside a button, card or box is uneven: more above than below (a last paragraph with a bottom margin), or `padding: 12px 24px 12px 8px`; centred content sits off centre | 34% (and at least 4 px) |
+| `align` | Stacked items almost share a left edge (or centre): 24, 26 and 31 px | 1.5 to 8 px off |
+| `rhythm` | Gaps between stacked blocks are near-misses (16, 19, 16 px). Clearly different steps (8 and 24) pass | 1.5 px to 25% |
+| `max-gap` | Two blocks on a screen that should fit are far apart | 20% of the height |
+| `sibling-mismatch` | Boxes side by side (cards in a row) have different heights or padding | 5% (at least 4 px) / 2 px |
+| `line-length` | A paragraph has too many characters per line to read | 90 characters |
 
 These rules catch the common reasons a page "feels off". They cannot judge taste. A page can pass and still be ugly. The goal is a floor: no page ships top-heavy, crowded or cut off.
 
